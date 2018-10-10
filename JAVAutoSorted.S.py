@@ -1,41 +1,44 @@
 # coding: utf-8
-#v2.0
+#v2.0 20180929
 ##增加檔案比對、自動重新命名
-#v3.0
-##預計增加批次處理，將欲處理的番號存在keylist.txt
+#v3.0 20180930
+##增加批次處理，將欲處理的番號存在keylist.txt
+#v3.1 20181006
+##更新運算邏輯、重新整理架構、新增素人片番號的比對及封面下載、
+##比對檔案改為直接比對檔案大小、以及些許細部調整
 
 import os , requests , urllib , time ,filecmp ,hashlib
 from bs4 import BeautifulSoup
 
-CheckFile = True
+CheckFile = True #是否進行重複檔案杜對
 
-
-class log:
-	def logNprint(text):
+class Log:
+	def NPrint(text):
 		os.chdir(mypath)
 		print(text)
 		with open("error.log","a", encoding = 'utf8') as data:
 			data.write(str(text)+"\n")
-	def logtext(text):
+	def Text(text):
 		with open("error.log","a", encoding = 'utf8') as data:
 			data.write(str(text)+"\n")
-	def savelist(key,Title=True):
-		fname = "@FileList.txt" if Title else "@CodeList.txt"
-		new = title if Title == "title" else code
+	def SaveList(key,Title):
+		fname = ("@FileList.txt" if Title else "@CodeList.txt")
+		new = (title if Title else code)
 
 		os.chdir(mypath+"\\@~Sorted\\"+key)
 		try: #讀取先前的清單
-			with open(fname , "r") as clog: 
+			with open(fname , "r", encoding = 'utf8') as clog: 
 				SaveList = [l.strip() for l in clog ]
 		except:
 			SaveList = []
-
-		SaveList += [new]
-		if len(TitleList) != 0 and len(CodeList) !=0: #如果非空目錄的話
-			with open(fname,"w", encoding = 'utf8') as data: #寫檔
-				for i in sorted(TitleList):
-					data.write(i+"\n")
-
+		if new not in SaveList :
+			SaveList += [new]
+		else:
+			return
+		if len(SaveList) != 0: #如果非空目錄的話
+			with open(fname,"w", encoding = 'utf8') as sdata: #寫檔
+				for i in sorted(SaveList):
+					sdata.write(i+"\n")
 
 def convert_bytes(num):
 	for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
@@ -80,142 +83,175 @@ def GetCode(filename):
 		code += "Z"
 	return code
 
-def CoverDL(code,dlornot):
-	global TitleList , dirpath
-	url = "https://www.javbus.com/"+code
-	response = requests.get(url)
-	response.encoding = 'UTF-8' 
-	soup = BeautifulSoup(response.text, 'lxml')
+class DL:
+	def Cover1(code):
+		global title , dirpath ,imglink
+		url = "https://www.javbus.com/"+code
+		response = requests.get(url)
+		response.encoding = 'UTF-8' 
+		soup = BeautifulSoup(response.text, 'lxml')
 
-	if soup.find("title").getText() == "404 Not Found" or soup.find("title").getText() == "404 Page Not Found! - JavBus":
-		text = "*Error : " + code+ " 404 Not Found"
-		logNprint(text)
-		return
-	elif soup.find("h3") == None:
-		logNprint("*Error : " + code+ " Unknown Error")
-		log(str(soup))
-		return
+		if soup.find("title").getText() == "404 Not Found" or soup.find("title").getText() == "404 Page Not Found! - JavBus":
+			text = "*Error : " + code+ " 404 Not Found"
+			Log.NPrint(text)
+			return
+		elif soup.find("h3") == None:
+			Log.NPrint("*Error : " + code+ " Unknown Error")
+			Log.Text(str(soup))
+			return
 		
-	article = soup.find("div", {"class": "container"})
-	if article == None:
-		logNprint("*Error : " + code+ " Unknown Error")
-		return
-	title = article.find("h3").getText()
-	imglink = article.find("a", {"class": "bigImage"}).get("href")
-	TitleList += [title]
+		article = soup.find("div", {"class": "container"})
+		if article == None:
+			Log.NPrint("*Error : " + code+ " Unknown Error")
+			return
+		title = article.find("h3").getText()
+		imglink = article.find("a", {"class": "bigImage"}).get("href")
 
-	r = requests.get(imglink)
-	filename = title + ".jpg"
+		r = requests.get(imglink)
+		filename = title + ".jpg"
 
-	if os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+title):
-		dirpath = mypath+"\\@~Sorted\\"+key+"\\"+title
-	elif os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+code):
-		dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
-	else:	
-		try:
-			os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+title)
+		if os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+title):
 			dirpath = mypath+"\\@~Sorted\\"+key+"\\"+title
-		except:
-			os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+code)
+		elif os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+code):
 			dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
-	os.chdir(dirpath)
-	if dlornot:
-		try:
-			with open(filename, "wb") as imgdata:
-				imgdata.write(r.content)
-			print("CoverDL : "+title)
-			return True
-		except:
-			with open(code+".jpg", "wb") as imgdata:
-				imgdata.write(r.content)
-			print("CoverDL : "+title)
+		else:	
+			try:
+				os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+title)
+				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+title
+			except:
+				os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+code)
+				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
+		os.chdir(dirpath)
+		if not os.path.isfile(filename):
+			try:
+				with open(filename, "wb") as imgdata:
+					imgdata.write(r.content)
+				print("CoverDL : "+title)
+				return True
+			except:
+				with open(code+".jpg", "wb") as imgdata:
+					imgdata.write(r.content)
+				print("CoverDL : "+title)
+				return True
+		else:
 			return True
 
+	def Cover2(code):
+		global title , dirpath ,imglink
+		url = "https://www.jav321.com/video/"+code
+		response = requests.get(url)
+		response.encoding = 'UTF-8' 
+		soup = BeautifulSoup(response.text, 'lxml')
+
+		t1 = soup.find("h3").getText()
+		t2 = soup.find("h3").find("small").getText()
+		title = code + " " +t1.replace(t2,"").strip()
+
+		if  t1.replace(t2,"") == " ":
+			text = "*Error : " + code+ " 404 Not Found"
+			Log.NPrint(text)
+
+		imgs = soup.find_all("div","col-xs-12 col-md-12")[:-1]
+		imglist = [i.find("img").get("src") for i in imgs]
+		imglink = imglist[0]
+
+		if os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+title):
+			dirpath = mypath+"\\@~Sorted\\"+key+"\\"+title
+		elif os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+code):
+			dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
+		else:	
+			try:
+				os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+title)
+				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+title
+			except:
+				os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+code)
+				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
+		os.chdir(dirpath)
+		print("StartDL : "+code)
+		for img in imglist:
+			dotpos = img.rfind("/")
+			filename = img[dotpos+1:]
+
+			r = requests.get(img)
+			if not os.path.isfile(filename):
+				try:
+					with open(filename, "wb") as imgdata:
+						imgdata.write(r.content)
+				except:
+					try:
+						with open(code+".jpg", "wb") as imgdata:
+							imgdata.write(r.content)
+					except:
+						return
+		print("CoverDL : "+title)
+		return True
+
+	def DL(key):
+		r = requests.get(imglink)
+		filename = title + ".jpg"
+		os.chdir(mypath+"\\@~Sorted\\"+key)
+		if not os.path.isfile(filename):
+			try:
+				with open(filename, "wb") as imgdata:
+					imgdata.write(r.content)
+			except:
+				with open(code+".jpg", "wb") as imgdata:
+					imgdata.write(r.content)
 
 #要處理的番號清單
 with open("keyword.txt" , "r", encoding = 'utf8') as keydata: 
 	KeyList = [l.strip() for l in keydata ]
 
-#讀取檔案清單
-mypath = os.getcwd()
+mypath = os.getcwd() #執行目錄
 
-for key in KeyList:
-	print("\nKey  : "+key)
-	if not os.path.isdir(mypath+"\\@~Sorted"):
-		os.mkdir(mypath+"\\@~Sorted")
-	#讀取先前的清單
-	try:
-		os.chdir(mypath+"\\@~Sorted\\"+key)
-		with open("@FileList.txt" , "r") as clog: 
-			TitleList2 = [l.strip() for l in clog ]
-	except:
-		TitleList2 = []
-	try:
-		os.chdir(mypath+"\\@~Sorted\\"+key)
-		with open("@CodeList.txt" , "r") as clog: 
-			CodeList2 = [l.strip() for l in clog ]
-	except:
-		CodeList2 = []
-	TitleList , CodeList = [],[]
-
-	for root, dirs, files in os.walk(mypath):
-		if mypath+"\\@~Sorted" in root or mypath+"\\@" in root : #略過根目錄下帶有@的 (特製)
-			continue
-		if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
-			os.mkdir(mypath+"\\@~Sorted\\"+key)
-
-
-		os.chdir(root) #更改到當前目錄
-		print("\nRoot : "+root+"\n")
+for root, dirs, files in os.walk(mypath):
+	if mypath+"\\@~Sorted" in root or mypath+"\\@" in root or "新作" in root or "合集" in root : #略過根目錄下帶有@的資料夾 (特製)
+		continue
+	if not os.path.isdir(mypath+"\\@~Sorted\\"):
+		os.mkdir(mypath+"\\@~Sorted\\")
+	os.chdir(root) #更改到當前目錄
+	print("Path : "+root+"\n")
 	
+	for key in KeyList:
 		for i in files:
 			dirpath = mypath
 			code = GetCode(i) #從檔名找番號
-			if code != None :
-				if code not in CodeList:
-					x = CoverDL(code,True)
-					if x :
-						CodeList += [code]
-					else :
-						continue
+			if code : #如果能夠從檔案名稱找出番號
+				print("Code :",code)
+				if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
+					os.mkdir(mypath+"\\@~Sorted\\"+key)
+				x = DL.Cover1(code) if not key[0].isdigit() else DL.Cover2(code)
+				if x : #如果存在對應的資料，且下載封面成功
+					print("File : "+i)
+					DL.DL(key)
 				else:
-					CoverDL(code,False)
+					continue
 
-				print("File : "+i)
 				fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小，改檔名
-				if fsize[1] == "GB" and float(fsize[0]) >= 4 and "HD" not in i:
-					i2 = i.replace(".",".HD.")
+				if fsize[1] == "GB" and float(fsize[0]) >= 4 and ("HD" not in i):
+					dotpos = i.rfind(".")
+					i2 = i[:dotpos]+".HD"+i[dotpos:]
 					print("Rename : "+i2)
 				else:
 					i2=i
-
 				if not os.path.isfile(dirpath+"\\"+i2): #若檔案不存在
 					os.rename(root+"\\"+i,dirpath+"\\"+i2)
 					print("Move : "+dirpath)
 				else: #若檔案存在
 					file1 = root+"\\"+i
 					file2 = dirpath+"\\"+i2
-					if CheckFile and hashs(file1) == hashs(file2) : #若存在的檔案相同
-						logNprint("*Error : Exist same file \n  *FileName : "+i+"\n  *FilePath : "+root)
+					if CheckFile and file_size(file1) == file_size(file2) : #若需要比對檔案，且存在的檔案相同
+					#if CheckFile and file_size(file1) == file_size(file2) and hashs(file1) == hashs(file2) : #若需要比對檔案，且存在的檔案相同
+						Log.NPrint("*Error : Exist same file \n  *FileName : "+i+"\n  *FilePath : "+root)
 					else: #若存在的檔案不同
-						for j in range(1,6):
+						for j in range(1,10):
 							dotpos = i2.rfind(".")
-							i3 = i2[:dotpos]+"-"+str(j)+i2[dotpos:]
+							i3 = i2[:dotpos]+"~"+str(j)+i2[dotpos:]
 							if not os.path.isfile(dirpath+"\\"+i3):
 								os.rename(root+"\\"+i,dirpath+"\\"+i3)
-								logNprint("*Exist : "+i+"\n *Rename : "+i3)
-								print("  Move : "+dirpath)
+								Log.NPrint("*Exist : "+i+"\n *Rename : "+i3)
+								print("Move : "+dirpath)
 								break
-
-	os.chdir(mypath+"\\@~Sorted\\"+key) #匯出清單
-	TitleList += TitleList2
-	CodeList += CodeList2
-	if len(TitleList) != 0 and len(CodeList) !=0:
-		with open("@FileList.txt","w", encoding = 'utf8') as data:
-			for i in sorted(TitleList):
-				data.write(i+"\n")
-		with open("@CodeList.txt","w", encoding = 'utf8') as data:
-			for i in sorted(CodeList):
-				data.write(i+"\n")
-
+				Log.SaveList(key,True)
+				Log.SaveList(key,False)
 input("\n整理完成，請按Enter離開")
