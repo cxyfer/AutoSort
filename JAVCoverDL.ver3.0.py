@@ -6,8 +6,11 @@
 import os , requests , urllib , time ,filecmp ,hashlib
 from bs4 import BeautifulSoup
 
-DLRoot = True
-DLSeparately = False
+#參數
+#注意：若DLRoot跟DLSeparately皆為Flase，則只會儲存檔案清單，且導致DLAllPics無意義
+DLRoot = True #是否下載到跟目錄
+DLSeparately = False #是否下載到個別資料夾
+DLAllPics = True #是否下載所有圖片(封面+截圖)
 
 class Log:
 	def NPrint(text):
@@ -58,8 +61,13 @@ def GetCode(filename):
 		code += "Z"
 	return code
 
+def file_size(file_path):
+	if os.path.isfile(file_path):
+		file_info = os.stat(file_path)
+		return file_info.st_size
+
 class DL:
-	def Cover1(code,Check):
+	def Cover1(code):
 		global title , dirpath ,imglink
 		url = "https://www.javbus.com/"+code
 		response = requests.get(url)
@@ -85,11 +93,11 @@ class DL:
 		r = requests.get(imglink)
 		filename = title + ".jpg"
 
-		if Check :
+		if not DLRoot or not DLSeparately:
 			return True
 		dirpath = root
 		os.chdir(dirpath)
-		if not os.path.isfile(filename):
+		if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
 			try:
 				with open(filename, "wb") as imgdata:
 					imgdata.write(r.content)
@@ -103,7 +111,7 @@ class DL:
 		else:
 			return True
 
-	def Cover2(code,Check):
+	def Cover2(code):
 		global title , dirpath ,imglink
 		url = "https://www.jav321.com/video/"+code
 		response = requests.get(url)
@@ -129,7 +137,7 @@ class DL:
 		filename = title + ".jpg"
 		os.chdir(dirpath)
 		r = requests.get(imglink)
-		if not os.path.isfile(filename):
+		if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
 			try:
 				with open(filename, "wb") as imgdata:
 					imgdata.write(r.content)
@@ -170,7 +178,7 @@ for root, dirs, files in os.walk(mypath):
 			dirpath = mypath
 			code = GetCode(i) #從檔名找番號
 			if code : #如果能夠從檔案名稱找出番號
-				x = DL.Cover1(code,DLSeparately) if not key[0].isdigit() else DL.Cover2(code,DLSeparately)
+				x = DL.Cover1(code) if not key[0].isdigit() else DL.Cover2(code)
 				if x : #如果存在對應的資料，且下載封面成功
 					print("File : "+i)
 					DL.DL()

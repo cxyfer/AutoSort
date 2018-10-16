@@ -122,7 +122,7 @@ class DL:
 				os.mkdir(mypath+"\\@~Sorted\\"+key+"\\"+code)
 				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
 		os.chdir(dirpath)
-		if not os.path.isfile(filename):
+		if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
 			try:
 				with open(filename, "wb") as imgdata:
 					imgdata.write(r.content)
@@ -173,7 +173,7 @@ class DL:
 			filename = img[dotpos+1:]
 
 			r = requests.get(img)
-			if not os.path.isfile(filename):
+			if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
 				try:
 					with open(filename, "wb") as imgdata:
 						imgdata.write(r.content)
@@ -210,7 +210,7 @@ for root, dirs, files in os.walk(mypath):
 	if not os.path.isdir(mypath+"\\@~Sorted\\"):
 		os.mkdir(mypath+"\\@~Sorted\\")
 	os.chdir(root) #更改到當前目錄
-	print("Path : "+root+"\n")
+	print("\nPath : "+root+)
 	
 	for key in KeyList:
 		for i in files:
