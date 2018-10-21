@@ -93,10 +93,14 @@ class DL:
 
 		if soup.find("title").getText() == "404 Not Found" or soup.find("title").getText() == "404 Page Not Found! - JavBus":
 			text = "*Error : " + code+ " 404 Not Found"
+			textpath = "Path : "+root 
+			Log.Text(textpath)
 			Log.NPrint(text)
 			return
 		elif soup.find("h3") == None:
 			Log.NPrint("*Error : " + code+ " Unknown Error")
+			textpath = "Path : "+root 
+			Log.Text(textpath)
 			Log.Text(str(soup))
 			return
 		
@@ -149,6 +153,8 @@ class DL:
 
 		if  t1.replace(t2,"") == " ":
 			text = "*Error : " + code+ " 404 Not Found"
+			textpath = "Path : "+root 
+			Log.Text(textpath)
 			Log.NPrint(text)
 
 		imgs = soup.find_all("div","col-xs-12 col-md-12")[:-1]
