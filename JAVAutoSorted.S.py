@@ -220,7 +220,7 @@ for root, dirs, files in os.walk(mypath):
 				print("Code :",code)
 				if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
 					os.mkdir(mypath+"\\@~Sorted\\"+key)
-				x = DL.Cover1(code) if not key[0].isdigit() else DL.Cover2(code)
+				x = DL.Cover1(code) if not key[0].isdigit() or not key =="SIRO" else DL.Cover2(code)
 				if x : #如果存在對應的資料，且下載封面成功
 					print("File : "+i)
 					DL.DL(key)
