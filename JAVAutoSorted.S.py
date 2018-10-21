@@ -210,7 +210,7 @@ for root, dirs, files in os.walk(mypath):
 	if not os.path.isdir(mypath+"\\@~Sorted\\"):
 		os.mkdir(mypath+"\\@~Sorted\\")
 	os.chdir(root) #更改到當前目錄
-	print("\nPath : "+root+)
+	print("\nPath : "+root)
 	
 	for key in KeyList:
 		for i in files:
