@@ -87,7 +87,8 @@ class DL:
 	def Cover1(code):
 		global title , dirpath ,imglink
 		url = "https://www.javbus.com/"+code
-		response = requests.get(url)
+		headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
+		response = requests.get(url,headers = headers)
 		response.encoding = 'UTF-8' 
 		soup = BeautifulSoup(response.text, 'lxml')
 
@@ -143,7 +144,8 @@ class DL:
 	def Cover2(code):
 		global title , dirpath ,imglink
 		url = "https://www.jav321.com/video/"+code
-		response = requests.get(url)
+		headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
+		response = requests.get(url,headers = headers)
 		response.encoding = 'UTF-8' 
 		soup = BeautifulSoup(response.text, 'lxml')
 
@@ -232,7 +234,6 @@ for root, dirs, files in os.walk(mypath):
 					DL.DL(key)
 				else:
 					continue
-
 				fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小，改檔名
 				if fsize[1] == "GB" and float(fsize[0]) >= 4 and ("HD" not in i):
 					dotpos = i.rfind(".")
@@ -248,7 +249,8 @@ for root, dirs, files in os.walk(mypath):
 					file2 = dirpath+"\\"+i2
 					if CheckFile and file_size(file1) == file_size(file2) : #若需要比對檔案，且存在的檔案相同
 					#if CheckFile and file_size(file1) == file_size(file2) and hashs(file1) == hashs(file2) : #若需要比對檔案，且存在的檔案相同
-						Log.NPrint("*Error : Exist same file \n  *FileName : "+i+"\n  *FilePath : "+root)
+						os.remove(file1)
+						Log.NPrint("*Error : Exist same file \n  *Remove : "+file1)
 					else: #若存在的檔案不同
 						for j in range(1,10):
 							dotpos = i2.rfind(".")
