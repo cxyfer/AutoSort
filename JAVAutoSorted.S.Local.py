@@ -2,7 +2,7 @@
 ##Local Ver
 #使用本地資料，不爬取
 
-import os , requests , time ,filecmp ,hashlib
+import os , time ,filecmp ,hashlib
 
 CheckFile = True #是否進行重複檔案杜對
 
@@ -75,11 +75,18 @@ for root, dirs, files in os.walk(mypath):
 	
 	for key in Dic.keys():
 		for i in files:
+			if ".part" in i: #略過下載中檔案
+				continue
 			if key.upper() in i.upper() or key.upper().replace("-","",1) in i.upper(): #如果能夠從檔案名稱找出番號
 				print("Code :",key)
 				dirpath = mypath+"\\@~Sorted\\"+key+" "+Dic[key]
 				if not os.path.isdir(dirpath):
-					os.mkdir(dirpath)
+					try:
+						os.mkdir(dirpath)
+					except: #若無法建立資料夾(名稱太長)
+						dirpath = dirpath = mypath+"\\@~Sorted\\"+key
+						if not os.path.isdir(dirpath):
+							os.mkdir(dirpath)
 				print("File : "+i)
 				fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小
 
@@ -88,15 +95,15 @@ for root, dirs, files in os.walk(mypath):
 					print("Move : "+dirpath)
 				else: #若檔案存在
 					file1 = root+"\\"+i
-					file2 = dirpath+"\\"+i2
+					file2 = dirpath+"\\"+i
 					if CheckFile and file_size(file1) == file_size(file2) : #若需要比對檔案，且存在的檔案相同
 					#if CheckFile and file_size(file1) == file_size(file2) and hashs(file1) == hashs(file2) : #若需要比對檔案，且存在的檔案相同
 						os.remove(file1)
 						Log.NPrint("*Error : Exist same file \n  *Remove : "+file1)
 					else: #若存在的檔案不同
 						for j in range(1,10):
-							dotpos = i2.rfind(".")
-							i3 = i2[:dotpos]+"~"+str(j)+i2[dotpos:]
+							dotpos = i.rfind(".")
+							i3 = i[:dotpos]+"~"+str(j)+i2[dotpos:]
 							if not os.path.isfile(dirpath+"\\"+i3):
 								os.rename(root+"\\"+i,dirpath+"\\"+i3)
 								Log.NPrint("*Exist : "+i+"\n *Rename : "+i3)

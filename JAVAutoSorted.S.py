@@ -11,6 +11,7 @@ import os , requests , urllib , time ,filecmp ,hashlib
 from bs4 import BeautifulSoup
 
 CheckFile = True #是否進行重複檔案杜對
+DLAll = False #是否下載所有截圖
 
 class Log:
 	def NPrint(text):
@@ -176,6 +177,9 @@ class DL:
 				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
 		os.chdir(dirpath)
 		print("StartDL : "+code)
+
+		if not DLAll:
+			imglist = imglist[:1]
 		for img in imglist:
 			dotpos = img.rfind("/")
 			filename = img[dotpos+1:]
