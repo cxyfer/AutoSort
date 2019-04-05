@@ -80,6 +80,8 @@ def GetCode(filename):
 			code = filename[cpos:cpos+len(c)+i]
 			code = code.upper()
 			break
+	if len(code) == len(c) : #如果找不到番號(番號跟關鍵字長度一樣)
+		return None
 	if key == "IBW" : #IBW特製
 		code += "Z"
 	return code
@@ -211,7 +213,7 @@ class DL:
 					imgdata.write(r.content)
 
 #要處理的番號清單
-with open("keyword.txt" , "r", encoding = 'utf8') as keydata: 
+with open("keyword.txt" , "r", encoding = 'utf-8-sig') as keydata: 
 	KeyList = [l.strip() for l in keydata ]
 
 mypath = os.getcwd() #執行目錄
@@ -226,9 +228,13 @@ for root, dirs, files in os.walk(mypath):
 	
 	for key in KeyList:
 		for i in files:
+			if "padding_file" in i or "HstarForum" in i: #去除容易誤判的冗贅檔案名
+				continue
 			dirpath = mypath
 			code = GetCode(i) #從檔名找番號
 			if code : #如果能夠從檔案名稱找出番號
+				if key == "336KNB" or key == "302GERK": #臨時處理
+					continue
 				print("Code :",code)
 				if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
 					os.mkdir(mypath+"\\@~Sorted\\"+key)
@@ -237,14 +243,22 @@ for root, dirs, files in os.walk(mypath):
 					print("File : "+i)
 					DL.DL(key)
 				else:
-					continue
-				fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小，改檔名
+					code = code.replace("-00","-") #例外處理：部分番號會用5位數字，但搜尋時必須為3位
+					print("Code :",code)
+					x2 = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" else DL.Cover1(code)
+					if x2 :
+						print("File : "+i)
+						DL.DL(key)
+					else:
+						continue
+				'''fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小，改檔名
 				if fsize[1] == "GB" and float(fsize[0]) >= 4 and ("HD" not in i):
 					dotpos = i.rfind(".")
 					i2 = i[:dotpos]+".HD"+i[dotpos:]
 					print("Rename : "+i2)
 				else:
-					i2=i
+					i2=i'''
+				i2=i
 				if not os.path.isfile(dirpath+"\\"+i2): #若檔案不存在
 					os.rename(root+"\\"+i,dirpath+"\\"+i2)
 					print("Move : "+dirpath)
