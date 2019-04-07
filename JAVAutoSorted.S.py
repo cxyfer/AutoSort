@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 CheckFile = True #是否進行重複檔案杜對
 DLAll = False #是否下載所有截圖
 
+headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
+
 class Log:
 	def NPrint(text):
 		os.chdir(mypath)
@@ -82,7 +84,7 @@ def GetCode(filename):
 			break
 	if len(code) == len(c) : #如果找不到番號(番號跟關鍵字長度一樣)
 		return None
-	if key == "IBW" : #IBW特製
+	if key == "IBW" or key == "AOZ" : #IBW特製
 		code += "Z"
 	return code
 
@@ -90,7 +92,6 @@ class DL:
 	def Cover1(code):
 		global title , dirpath ,imglink
 		url = "https://www.javbus.com/"+code
-		headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
 		response = requests.get(url,headers = headers)
 		response.encoding = 'UTF-8' 
 		soup = BeautifulSoup(response.text, 'lxml')
@@ -115,7 +116,7 @@ class DL:
 		title = article.find("h3").getText()
 		imglink = article.find("a", {"class": "bigImage"}).get("href")
 
-		r = requests.get(imglink)
+		r = requests.get(imglink,headers = headers)
 		filename = title + ".jpg"
 
 		if os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+title):
@@ -146,21 +147,33 @@ class DL:
 
 	def Cover2(code):
 		global title , dirpath ,imglink
-		url = "https://www.jav321.com/video/"+code
-		headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
-		response = requests.get(url,headers = headers)
+		#url = "https://www.jav321.com/video/"+code
+		surl = "https://www.jav321.com/search"
+		payload = {
+			'sn': code
+			}
+		#response = requests.get(url,headers = headers)
+
+		response = requests.post(url=surl, data=payload, headers=headers) 
 		response.encoding = 'UTF-8' 
 		soup = BeautifulSoup(response.text, 'lxml')
+		if soup.find("div", {"class": "alert"}):
+			text = "*Error : " + soup.find("div", {"class": "alert"}).getText()
+			textpath = "Path : "+root 
+			Log.Text(textpath)
+			Log.NPrint(text)
+			return
 
 		t1 = soup.find("h3").getText()
 		t2 = soup.find("h3").find("small").getText()
 		title = code + " " +t1.replace(t2,"").strip()
 
-		if  t1.replace(t2,"") == " ":
+		if  t1.replace(t2,"") == " " or t1.replace(t2,"") == "":
 			text = "*Error : " + code+ " 404 Not Found"
 			textpath = "Path : "+root 
 			Log.Text(textpath)
 			Log.NPrint(text)
+			return
 
 		imgs = soup.find_all("div","col-xs-12 col-md-12")[:-1]
 		imglist = [i.find("img").get("src") for i in imgs]
@@ -179,14 +192,13 @@ class DL:
 				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
 		os.chdir(dirpath)
 		print("StartDL : "+code)
-
 		if not DLAll:
 			imglist = imglist[:1]
 		for img in imglist:
 			dotpos = img.rfind("/")
 			filename = img[dotpos+1:]
 
-			r = requests.get(img)
+			r = requests.get(img,headers = headers)
 			if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
 				try:
 					with open(filename, "wb") as imgdata:
@@ -201,7 +213,8 @@ class DL:
 		return True
 
 	def DL(key):
-		r = requests.get(imglink)
+
+		r = requests.get(imglink,headers = headers)
 		filename = title + ".jpg"
 		os.chdir(mypath+"\\@~Sorted\\"+key)
 		if not os.path.isfile(filename):
@@ -217,14 +230,12 @@ with open("keyword.txt" , "r", encoding = 'utf-8-sig') as keydata:
 	KeyList = [l.strip() for l in keydata ]
 
 mypath = os.getcwd() #執行目錄
-print(mypath)
 
 for lsdir in os.listdir(mypath): 
 	if not os.path.isdir(lsdir): #如果不是資料夾
 		continue
 	if lsdir[0]=="@" or "新作" in lsdir or "合集" in lsdir: #略過根目錄下帶有@的資料夾 (特製)
 		continue
-
 	if not os.path.isdir(mypath+"\\@~Sorted\\"):
 		os.mkdir(mypath+"\\@~Sorted\\")
 		
@@ -239,19 +250,21 @@ for lsdir in os.listdir(mypath):
 				dirpath = mypath
 				code = GetCode(i) #從檔名找番號
 				if code : #如果能夠從檔案名稱找出番號
-					if key == "336KNB" or key == "302GERK": #臨時處理
-						continue
+					#if key == "336KNB" or key == "302GERK": #臨時處理
+					#	continue
 					print("Code :",code)
 					if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
 						os.mkdir(mypath+"\\@~Sorted\\"+key)
-					x = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" else DL.Cover1(code)
+					#x = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else DL.Cover1(code)
+					x = DL.Cover2(code)
 					if x : #如果存在對應的資料，且下載封面成功
 						print("File : "+i)
 						DL.DL(key)
 					else:
 						code = code.replace("-00","-") #例外處理：部分番號會用5位數字，但搜尋時必須為3位
 						print("Code :",code)
-						x2 = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" else DL.Cover1(code)
+						#x2 = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" else DL.Cover1(code)
+						x2 = DL.Cover2(code)
 						if x2 :
 							print("File : "+i)
 							DL.DL(key)
