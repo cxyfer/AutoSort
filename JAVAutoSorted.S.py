@@ -231,18 +231,16 @@ with open("keyword.txt" , "r", encoding = 'utf-8-sig') as keydata:
 
 mypath = os.getcwd() #執行目錄
 
-for lsdir in os.listdir(mypath): 
+for lsdir in os.listdir(mypath):
 	if not os.path.isdir(lsdir): #如果不是資料夾
 		continue
 	if lsdir[0]=="@" or "新作" in lsdir or "合集" in lsdir: #略過根目錄下帶有@的資料夾 (特製)
 		continue
 	if not os.path.isdir(mypath+"\\@~Sorted\\"):
 		os.mkdir(mypath+"\\@~Sorted\\")
-		
 	for root, dirs, files in os.walk(mypath+"\\"+lsdir):
-		os.chdir(root) #更改到當前目錄
+		#os.chdir(root) #更改到當前目錄
 		print("\nPath : "+root)
-	
 		for key in KeyList:
 			for i in files:
 				if "padding_file" in i or "HstarForum" in i: #去除容易誤判的冗贅檔案名
