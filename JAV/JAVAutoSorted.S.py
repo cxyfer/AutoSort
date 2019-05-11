@@ -13,8 +13,6 @@ from bs4 import BeautifulSoup
 CheckFile = True #是否進行重複檔案杜對
 DLAll = False #是否下載所有截圖
 
-headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
-
 class Log:
 	def NPrint(text):
 		os.chdir(mypath)
@@ -82,9 +80,7 @@ def GetCode(filename):
 			code = filename[cpos:cpos+len(c)+i]
 			code = code.upper()
 			break
-	if len(code) == len(c) : #如果找不到番號(番號跟關鍵字長度一樣)
-		return None
-	if key == "IBW" or key == "AOZ" : #IBW特製
+	if key == "IBW" : #IBW特製
 		code += "Z"
 	return code
 
@@ -92,6 +88,7 @@ class DL:
 	def Cover1(code):
 		global title , dirpath ,imglink
 		url = "https://www.javbus.com/"+code
+		headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
 		response = requests.get(url,headers = headers)
 		response.encoding = 'UTF-8' 
 		soup = BeautifulSoup(response.text, 'lxml')
@@ -116,7 +113,7 @@ class DL:
 		title = article.find("h3").getText()
 		imglink = article.find("a", {"class": "bigImage"}).get("href")
 
-		r = requests.get(imglink,headers = headers)
+		r = requests.get(imglink)
 		filename = title + ".jpg"
 
 		if os.path.isdir(mypath+"\\@~Sorted\\"+key+"\\"+title):
@@ -147,33 +144,21 @@ class DL:
 
 	def Cover2(code):
 		global title , dirpath ,imglink
-		#url = "https://www.jav321.com/video/"+code
-		surl = "https://www.jav321.com/search"
-		payload = {
-			'sn': code
-			}
-		#response = requests.get(url,headers = headers)
-
-		response = requests.post(url=surl, data=payload, headers=headers) 
+		url = "https://www.jav321.com/video/"+code
+		headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36'}
+		response = requests.get(url,headers = headers)
 		response.encoding = 'UTF-8' 
 		soup = BeautifulSoup(response.text, 'lxml')
-		if soup.find("div", {"class": "alert"}):
-			text = "*Error : " + soup.find("div", {"class": "alert"}).getText()
-			textpath = "Path : "+root 
-			Log.Text(textpath)
-			Log.NPrint(text)
-			return
 
 		t1 = soup.find("h3").getText()
 		t2 = soup.find("h3").find("small").getText()
 		title = code + " " +t1.replace(t2,"").strip()
 
-		if  t1.replace(t2,"") == " " or t1.replace(t2,"") == "":
+		if  t1.replace(t2,"") == " ":
 			text = "*Error : " + code+ " 404 Not Found"
 			textpath = "Path : "+root 
 			Log.Text(textpath)
 			Log.NPrint(text)
-			return
 
 		imgs = soup.find_all("div","col-xs-12 col-md-12")[:-1]
 		imglist = [i.find("img").get("src") for i in imgs]
@@ -192,13 +177,14 @@ class DL:
 				dirpath = mypath+"\\@~Sorted\\"+key+"\\"+code
 		os.chdir(dirpath)
 		print("StartDL : "+code)
+
 		if not DLAll:
 			imglist = imglist[:1]
 		for img in imglist:
 			dotpos = img.rfind("/")
 			filename = img[dotpos+1:]
 
-			r = requests.get(img,headers = headers)
+			r = requests.get(img)
 			if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
 				try:
 					with open(filename, "wb") as imgdata:
@@ -213,8 +199,7 @@ class DL:
 		return True
 
 	def DL(key):
-
-		r = requests.get(imglink,headers = headers)
+		r = requests.get(imglink)
 		filename = title + ".jpg"
 		os.chdir(mypath+"\\@~Sorted\\"+key)
 		if not os.path.isfile(filename):
@@ -226,79 +211,59 @@ class DL:
 					imgdata.write(r.content)
 
 #要處理的番號清單
-with open("keyword.txt" , "r", encoding = 'utf-8-sig') as keydata: 
+with open("keyword.txt" , "r", encoding = 'utf8') as keydata: 
 	KeyList = [l.strip() for l in keydata ]
 
 mypath = os.getcwd() #執行目錄
 
-for lsdir in os.listdir(mypath):
-	if not os.path.isdir(lsdir): #如果不是資料夾
-		continue
-	if lsdir[0]=="@" or "新作" in lsdir or "合集" in lsdir: #略過根目錄下帶有@的資料夾 (特製)
+for root, dirs, files in os.walk(mypath):
+	if mypath+"\\@~Sorted" in root or mypath+"\\@" in root or "新作" in root or "合集" in root : #略過根目錄下帶有@的資料夾 (特製)
 		continue
 	if not os.path.isdir(mypath+"\\@~Sorted\\"):
 		os.mkdir(mypath+"\\@~Sorted\\")
-	for root, dirs, files in os.walk(mypath+"\\"+lsdir):
-		#os.chdir(root) #更改到當前目錄
-		print("\nPath : "+root)
-		for key in KeyList:
-			for i in files:
-				if "padding_file" in i or "HstarForum" in i: #去除容易誤判的冗贅檔案名
+	os.chdir(root) #更改到當前目錄
+	print("\nPath : "+root)
+	
+	for key in KeyList:
+		for i in files:
+			dirpath = mypath
+			code = GetCode(i) #從檔名找番號
+			if code : #如果能夠從檔案名稱找出番號
+				print("Code :",code)
+				if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
+					os.mkdir(mypath+"\\@~Sorted\\"+key)
+				x = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" else DL.Cover1(code)
+				if x : #如果存在對應的資料，且下載封面成功
+					print("File : "+i)
+					DL.DL(key)
+				else:
 					continue
-				dirpath = mypath
-				code = GetCode(i) #從檔名找番號
-				if code : #如果能夠從檔案名稱找出番號
-					#if key == "336KNB" or key == "302GERK": #臨時處理
-					#	continue
-					print("Code :",code)
-					if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
-						os.mkdir(mypath+"\\@~Sorted\\"+key)
-					#x = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else DL.Cover1(code)
-					x = DL.Cover2(code)
-					if x : #如果存在對應的資料，且下載封面成功
-						print("File : "+i)
-						DL.DL(key)
-					else:
-						code = code.replace("-00","-") #例外處理：部分番號會用5位數字，但搜尋時必須為3位
-						print("Code :",code)
-						#x2 = DL.Cover2(code) if key[0].isdigit() or key =="SIRO" else DL.Cover1(code)
-						x2 = DL.Cover2(code)
-						if x2 :
-							print("File : "+i)
-							DL.DL(key)
-						else:
-							continue
-					'''fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小，改檔名
-					if fsize[1] == "GB" and float(fsize[0]) >= 4 and ("HD" not in i):
-						dotpos = i.rfind(".")
-						i2 = i[:dotpos]+".HD"+i[dotpos:]
-						print("Rename : "+i2)
-					else:
-						i2=i'''
+				fsize = file_size(root+"\\"+i).split(" ") #檢查檔案大小，改檔名
+				if fsize[1] == "GB" and float(fsize[0]) >= 4 and ("HD" not in i):
+					dotpos = i.rfind(".")
+					i2 = i[:dotpos]+".HD"+i[dotpos:]
+					print("Rename : "+i2)
+				else:
 					i2=i
-					if not os.path.isfile(dirpath+"\\"+i2): #若檔案不存在
-						os.rename(root+"\\"+i,dirpath+"\\"+i2)
-						print("Move : "+dirpath)
-					else: #若檔案存在
-						file1 = root+"\\"+i
-						file2 = dirpath+"\\"+i2
-						if CheckFile and file_size(file1) == file_size(file2) : #若需要比對檔案，且存在的檔案相同
-						#if CheckFile and file_size(file1) == file_size(file2) and hashs(file1) == hashs(file2) : #若需要比對檔案，且存在的檔案相同
-							os.remove(file1)
-							Log.NPrint("*Error : Exist same file \n  *Remove : "+file1)
-						else: #若存在的檔案不同
-							for j in range(1,10):
-								dotpos = i2.rfind(".")
-								i3 = i2[:dotpos]+"~"+str(j)+i2[dotpos:]
-								if not os.path.isfile(dirpath+"\\"+i3):
-									try:
-										os.rename(root+"\\"+i,dirpath+"\\"+i3)
-									except FileNotFoundError:
-										Log.NPrint("*Error : FileNotFound "+file1)
-										break
-									Log.NPrint("*Exist : "+i+"\n *Rename : "+i3)
-									print("Move : "+dirpath)
-									break
-					Log.SaveList(key,True)
-					Log.SaveList(key,False)
+				if not os.path.isfile(dirpath+"\\"+i2): #若檔案不存在
+					os.rename(root+"\\"+i,dirpath+"\\"+i2)
+					print("Move : "+dirpath)
+				else: #若檔案存在
+					file1 = root+"\\"+i
+					file2 = dirpath+"\\"+i2
+					if CheckFile and file_size(file1) == file_size(file2) : #若需要比對檔案，且存在的檔案相同
+					#if CheckFile and file_size(file1) == file_size(file2) and hashs(file1) == hashs(file2) : #若需要比對檔案，且存在的檔案相同
+						os.remove(file1)
+						Log.NPrint("*Error : Exist same file \n  *Remove : "+file1)
+					else: #若存在的檔案不同
+						for j in range(1,10):
+							dotpos = i2.rfind(".")
+							i3 = i2[:dotpos]+"~"+str(j)+i2[dotpos:]
+							if not os.path.isfile(dirpath+"\\"+i3):
+								os.rename(root+"\\"+i,dirpath+"\\"+i3)
+								Log.NPrint("*Exist : "+i+"\n *Rename : "+i3)
+								print("Move : "+dirpath)
+								break
+				Log.SaveList(key,True)
+				Log.SaveList(key,False)
 input("\n整理完成，請按Enter離開")

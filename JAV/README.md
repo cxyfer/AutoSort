@@ -1,4 +1,4 @@
-# JAVAutoSorted
+# JAVAutoSort
 
 ![執行示例](https://i.imgur.com/zQCvrT1.png)
 

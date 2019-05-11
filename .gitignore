@@ -104,9 +104,9 @@ venv.bak/
 .mypy_cache/
 
 # TestFile
-/Test
-/@~Sorted
-@CodeList.txt
-@FileList.txt
-Key_nyaa.txt
-data.txt
+JAV/Test/
+JAV/@~Sorted/
+JAV/@CodeList.txt
+JAV/@FileList.txt
+JAV/Key_nyaa.txt
+JAV/data.txt
