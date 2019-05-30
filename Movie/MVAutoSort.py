@@ -12,7 +12,7 @@ regSt = True #地區縮寫，使用region.txt文件
 UseProxy = False #是否使用Proxy
 Remote = True #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端上操作)
 remote = "16tn:" #承上，遠端路徑
-Local = True #使用本地搜尋
+Local = True #使用本地搜尋(gen.py)
 LogPath = "D:\\AutoSortLog" #默認為執行目錄
 CSVName = "AutoSort"
 SaveExcel = False #!未啟用
@@ -266,7 +266,7 @@ for folder in folderList:
 			elif re.search(r"\(tt(.+?)\)",d):
 				imdb2db = "https://api.douban.com/v2/movie/imdb/%s?apikey=0df993c66c0c636e29ecbb5344252a4a" % ("tt"+re.search(r"\(tt(.+?)\)",d).group(1))
 				resjson(imdb2db)
-				dblink = res['alt'] if 'alt' in res.keys() else ""
+				dblink = res['alt'].replace("/movie/","/subject/")+"/" if 'alt' in res.keys() else ""
 			else:
 				dblink = Search.DB(d)
 			if dblink:

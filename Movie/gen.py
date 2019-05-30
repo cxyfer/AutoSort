@@ -58,7 +58,7 @@ def get_num_from_string(raw):
 
 def gen_douban(dblink):
     data = {}
-    sid = re.search(r"https:\/\/movie\.douban\.com\/subject\/(.+?)\/",dblink).group(1)
+    sid = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(.+?)\/",dblink).group(2)
     data['sid'] = sid
     douban_page = get_page(dblink, bs_=True)
     douban_api_json = get_page(
@@ -66,7 +66,7 @@ def gen_douban(dblink):
         params={'apikey': get_db_apikey()},
         json_=True
     )
-
+    data['success'] = False
     if "msg" in douban_api_json:
         data["error"] = douban_api_json["msg"]
     elif str(douban_page).find("检测到有异常请求") > -1:

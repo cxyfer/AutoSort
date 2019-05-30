@@ -3,15 +3,17 @@ from lxml import etree
 from opencc import OpenCC
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+import gen as Gen
 
 #Parameter
 CHT_TW = True #優先取台灣譯名，且轉為繁體；若為False則為豆瓣上簡體中文標題
 ZH_ENG = True #標題採中英混合；若為False則為僅中文標題 (當觸發ENGlen限制時則不保留英文標題)
 regSt = True #地區縮寫，使用region.txt文件
 UseProxy = False #是否使用Proxy
-Remote = False #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端上操作)
+Remote = True #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端上操作)
 remote = "16tn:" #承上，遠端路徑
-LogPath = "C:\\AutoSortLog" #默認為執行目錄
+Local = True #使用本地搜尋(gen.py)
+LogPath = "D:\\AutoSortLog" #默認為執行目錄
 CSVName = "AutoSort"
 SaveExcel = False #!未啟用
 YearSort = True #老舊電影合併存放
@@ -19,13 +21,13 @@ Manual = 0 #0為全自動；1為遇到錯誤時切換為手動；2為自動搜�
 SearchMod = 0 #搜尋模式，0為使用原始資料夾名稱；1為 !未啟用
 SubFolder = False #是否保留原始資料夾名稱，將其設為子資料夾 (當觸發pathlen限制時則不保留)
 pathlen = 165 #路徑長度限制(僅計算資料夾)。若不想啟用輸入極大值即可，觸發後將不建立子資料夾
-ENGlen = 50 #英文標題長度限制，若過長則僅保留中文標題。若不想啟用輸入極大值即可
+ENGlen = 65 #英文標題長度限制，若過長則僅保留中文標題。若不想啟用輸入極大值即可
 
 #Initialize
 dbapi = "https://api.douban.com/v2/movie/search?apikey=0dad551ec0f84ed02907ff5c42e8ec70&q="
 genapi2 = "https://api.rhilip.info/tool/movieinfo/gen?url="
-genapi1 = "https://api.nas.ink/infogen?url="
-genapi3 = "http://api.ourhelp.club/infogen?url="
+genapi3 = "https://api.nas.ink/infogen?url="
+genapi1 = "http://api.ourhelp.club/infogen?url="
 GenList = [genapi1,genapi2,genapi3]
 genapinum = 0 #用來切換API
 ua = UserAgent()
@@ -100,16 +102,16 @@ class Search:
 	def DB(key1,Manual=False): #Manual為手動整理參數 !暫未完成
 		global subtype , dblink
 		key2 = key1
-		'''for i in range(len(key1),0,-1): #去除冗贅資料，以便查詢
+		for i in range(len(key1),0,-1): #去除冗贅資料，以便查詢
 			if i-1 > 0 and key1[i-4:i].isdigit():
 				key2 = key1[:key1.find(key1[i-4:i])]
 				if key2 != "":
 					print("Change :",key2)
 				else:
 					key2 = key1
-				break'''
-		key2 = key1[key1.rfind("]")+1:]
-		print("Change :",key2)
+				break
+		'''key2 = key1[key1.rfind("]")+1:]
+		print("Change :",key2)'''
 
 		url = dbapi+key2
 		resjson(url)
@@ -134,33 +136,35 @@ class Search:
 			return False
 	def GetInfo(dblink,proxy,switch=0):
 		global year,subtype,reg1,reg2,reg3,save,genapinum
-		url2 = GenList[genapinum%3]+dblink
-		try:
-			r = requests.get(url2,headers={'User-Agent':ua.random},proxies=proxy,timeout=10)
-		except requests.exceptions.ReadTimeout:
-			print("*Error : Timeout")
-			return ""
-		if "Too Many Requests" in r.text:
-			if switch < 3:
-				switch += 1
-				genapinum += 1
-				print("*Error : Too Many Requests. Switch to another API.")
-				Search.GetInfo(dblink,proxy,switch=switch)
-			else:
-				print("*Error : Too Many Requests. Wait for 300 seconds to retry")
-				time.sleep(300)
-				Search.GetInfo(dblink,proxy)
-			return
+		if not Local:
+			url2 = GenList[genapinum%3]+dblink
+			try:
+				r = requests.get(url2,headers={'User-Agent':ua.random},proxies=proxy,timeout=10)
+			except requests.exceptions.ReadTimeout:
+				print("*Error : Timeout")
+				return ""
+			if "Too Many Requests" in r.text:
+				if switch < 3:
+					switch += 1
+					genapinum += 1
+					print("*Error : Too Many Requests. Switch to another API.")
+					Search.GetInfo(dblink,proxy,switch=switch)
+				else:
+					print("*Error : Too Many Requests. Wait for 300 seconds to retry")
+					time.sleep(300)
+					Search.GetInfo(dblink,proxy,switch=0)
+				return
 			'''proxy2 = get_proxy()
 			Search.GetInfo(dblink,proxy2)
 			return'''
-		res = r.json()
+		res = r.json() if not Local else Gen.gen_douban(dblink)
 		if not res['success']: # Success
-			if res['error'] == "GenHelp was banned by Douban.":
+			if res['error'] == "GenHelp was banned by Douban." and switch<3:
 				print("*Error :",res['error'],"Switch to another API.")
 				switch += 1
 				genapinum += 1
-				Search.GetInfo(dblink,proxy,switch)
+				Search.GetInfo(dblink,proxy,switch=switch)
+				return
 			else:
 				print("*Error :",res['error'])
 		else:
@@ -247,7 +251,7 @@ print("dbLink :",dblink)
 if dblink:
 	print(Search.GetInfo(dblink,proxies))'''
 
-built_proxy()
+#built_proxy()
 proxies = get_proxy() if UseProxy else ""
 mypath = os.getcwd() if not Remote else remote #執行目錄
 Logfile = LogPath+"\\move.log" if LogPath else "move.log"
@@ -262,7 +266,7 @@ for folder in folderList:
 			elif re.search(r"\(tt(.+?)\)",d):
 				imdb2db = "https://api.douban.com/v2/movie/imdb/%s?apikey=0df993c66c0c636e29ecbb5344252a4a" % ("tt"+re.search(r"\(tt(.+?)\)",d).group(1))
 				resjson(imdb2db)
-				dblink = res['alt'] if 'alt' in res.keys() else ""
+				dblink = res['alt'].replace("/movie/","/subject/")+"/" if 'alt' in res.keys() else ""
 			else:
 				dblink = Search.DB(d)
 			if dblink:
