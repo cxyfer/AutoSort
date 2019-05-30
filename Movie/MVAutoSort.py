@@ -3,6 +3,7 @@ from lxml import etree
 from opencc import OpenCC
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+import gen as Gen
 
 #Parameter
 CHT_TW = True #優先取台灣譯名，且轉為繁體；若為False則為豆瓣上簡體中文標題
@@ -11,6 +12,7 @@ regSt = True #地區縮寫，使用region.txt文件
 UseProxy = False #是否使用Proxy
 Remote = True #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端上操作)
 remote = "16tn:" #承上，遠端路徑
+Local = True #使用本地搜尋
 LogPath = "D:\\AutoSortLog" #默認為執行目錄
 CSVName = "AutoSort"
 SaveExcel = False #!未啟用
@@ -134,27 +136,28 @@ class Search:
 			return False
 	def GetInfo(dblink,proxy,switch=0):
 		global year,subtype,reg1,reg2,reg3,save,genapinum
-		url2 = GenList[genapinum%3]+dblink
-		try:
-			r = requests.get(url2,headers={'User-Agent':ua.random},proxies=proxy,timeout=10)
-		except requests.exceptions.ReadTimeout:
-			print("*Error : Timeout")
-			return ""
-		if "Too Many Requests" in r.text:
-			if switch < 3:
-				switch += 1
-				genapinum += 1
-				print("*Error : Too Many Requests. Switch to another API.")
-				Search.GetInfo(dblink,proxy,switch=switch)
-			else:
-				print("*Error : Too Many Requests. Wait for 300 seconds to retry")
-				time.sleep(300)
-				Search.GetInfo(dblink,proxy,switch=0)
-			return
+		if not Local:
+			url2 = GenList[genapinum%3]+dblink
+			try:
+				r = requests.get(url2,headers={'User-Agent':ua.random},proxies=proxy,timeout=10)
+			except requests.exceptions.ReadTimeout:
+				print("*Error : Timeout")
+				return ""
+			if "Too Many Requests" in r.text:
+				if switch < 3:
+					switch += 1
+					genapinum += 1
+					print("*Error : Too Many Requests. Switch to another API.")
+					Search.GetInfo(dblink,proxy,switch=switch)
+				else:
+					print("*Error : Too Many Requests. Wait for 300 seconds to retry")
+					time.sleep(300)
+					Search.GetInfo(dblink,proxy,switch=0)
+				return
 			'''proxy2 = get_proxy()
 			Search.GetInfo(dblink,proxy2)
 			return'''
-		res = r.json()
+		res = r.json() if not Local else Gen.gen_douban(dblink)
 		if not res['success']: # Success
 			if res['error'] == "GenHelp was banned by Douban." and switch<3:
 				print("*Error :",res['error'],"Switch to another API.")
