@@ -35,7 +35,7 @@ def nfo_imdb(path):
             with open(filepath, "r", encoding="latin-1") as data: 
                 for line in data:
                     if re.search(r"http://www.imdb.com/title/(.+?)",line):
-                        return re.search(r"http://www\.imdb\.com/title/(.+).",line).group(1)
+                        return re.search(r"http://www\.imdb\.com/title/(tt\d+)",line).group(1)
 
 def imdb2db(IMDbID):
     imdb2db = "https://api.douban.com/v2/movie/imdb/%s?apikey=0df993c66c0c636e29ecbb5344252a4a" % (IMDbID)
