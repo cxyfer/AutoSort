@@ -4,6 +4,7 @@ from opencc import OpenCC
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import gen as Gen
+import get as Get
 
 #Parameter
 CHT_TW = True #優先取台灣譯名，且轉為繁體；若為False則為豆瓣上簡體中文標題
@@ -19,7 +20,7 @@ SaveExcel = False #!未啟用
 YearSort = True #老舊電影合併存放
 Manual = 0 #0為全自動；1為遇到錯誤時切換為手動；2為自動搜尋手動確認 !未啟用
 SearchMod = 0 #搜尋模式，0為使用原始資料夾名稱；1為 !未啟用
-SubFolder = False #是否保留原始資料夾名稱，將其設為子資料夾 (當觸發pathlen限制時則不保留)
+SubFolder = True #是否保留原始資料夾名稱，將其設為子資料夾 (當觸發pathlen限制時則不保留)
 pathlen = 165 #路徑長度限制(僅計算資料夾)。若不想啟用輸入極大值即可，觸發後將不建立子資料夾
 ENGlen = 65 #英文標題長度限制，若過長則僅保留中文標題。若不想啟用輸入極大值即可
 
@@ -268,13 +269,18 @@ for folder in folderList:
 	if os.path.isdir(folder): #如果指定的資料夾存在
 		for d in os.listdir(folder):
 			subtype = ""
+			folderpath = "%s/%s" % (folder,d)
 			print("\nFolder :",d)
 			if re.search(r"\(db_(.+?)\)",d):
 				dblink = "https://movie.douban.com/subject/%s/" % (re.search(r"\(db_(.+?)\)",d).group(1))
 			elif re.search(r"\(tt(.+?)\)",d):
-				imdb2db = "https://api.douban.com/v2/movie/imdb/%s?apikey=0df993c66c0c636e29ecbb5344252a4a" % ("tt"+re.search(r"\(tt(.+?)\)",d).group(1))
-				resjson(imdb2db)
-				dblink = res['alt'].replace("/movie/","/subject/")+"/" if 'alt' in res.keys() else ""
+				IMDbID = re.search(r"\(tt(.+?)\)",d)
+				print("IMDbID :",IMDbID)
+				dblink = Get.imdb2db(IMDbID)
+			elif Get.nfo_imdb(folderpath):
+				IMDbID = Get.nfo_imdb(folderpath)
+				print("IMDbID :",IMDbID)
+				dblink = Get.imdb2db(IMDbID)
 			else:
 				dblink = Search.DB(d)
 			if dblink:
