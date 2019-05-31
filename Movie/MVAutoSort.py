@@ -10,7 +10,6 @@ import get as Get
 CHT_TW = True #優先取台灣譯名，且轉為繁體；若為False則為豆瓣上簡體中文標題
 ZH_ENG = True #標題採中英混合；若為False則為僅中文標題 (當觸發ENGlen限制時則不保留英文標題)
 regSt = True #地區縮寫，使用region.txt文件
-UseProxy = False #是否使用Proxy
 Remote = True #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端上操作)
 remote = "16tn:" #承上，遠端路徑
 Local = True #使用本地搜尋(gen.py)
@@ -43,39 +42,9 @@ for reg in regList:
 
 #Function
 def resjson(url):
-	global res
-	r = requests.get(url,headers={'User-Agent':ua.random})
-	res = r.json() # return dict
-def checkzh(text):
-	for t in text:
-		if ord(t) > 255:
-			return True
-def built_proxy():
-	global ProxyList
-	ProxyList = []
-	res = requests.get('https://free-proxy-list.net/', headers={'User-Agent':ua.random})
-	soup = BeautifulSoup(res.text,"lxml")
-	for items in soup.select("tbody tr"):
-		proxy = ':'.join([item.text for item in items.select("td")[:2]])
-		ProxyList += [proxy]
-def get_proxy():
-	random.shuffle(ProxyList)
-	proxy = ProxyList[0]
-	print("Proxy  :",proxy,end=", ")
-	proxies = {
-			"http": "http://"+proxy,
-			"https": "http://"+proxy
-				}
-	url = 'https://httpbin.org/ip'
-	try:
-		response = requests.get(url,proxies=proxies, headers={'User-Agent':ua.random})
-		res = response.json()
-		print(True,",",res['origin'])
-		return proxies
-	except:
-		print(False)
-		get_proxy()
-	return
+    r = requests.get(url,headers={'User-Agent':ua.random})
+    res = r.json() # return dict
+    return res
 def move(src,dst):
 	for root, dirs, files in os.walk(src):
 		for d in dirs:
@@ -117,7 +86,7 @@ class Search:
 		print("Change :",key2)'''
 
 		url = dbapi+key2
-		resjson(url)
+		res = resjson(url)
 		if int(res['total']) == 1 and len(res['subjects'])==1: #Only 1 Result
 			subtype = res['subjects'][0]['subtype']
 			dblink = res['subjects'][0]['alt']
@@ -127,22 +96,20 @@ class Search:
 			else:
 				print("*Error : Year doesn't match.")
 		elif int(res['total']) == 0 or len(res['subjects'])==0: #找不到結果
-			print("*Error : No results found.")
-			return False
+			return ""
 		elif int(res['total']) > 1 : #過多結果
 			for subject in res['subjects']: #例外處理-過多資料-年份比對
 				if subject['year'] in key1:
 					subtype = subject['subtype']
 					dblink = subject['alt']
 					return dblink
-			print("*Error : No results found.")
-			return False
-	def GetInfo(dblink,proxy,switch=0):
+			return False #Error : No results found.
+	def GetInfo(dblink,switch=0):
 		global year,subtype,reg1,reg2,reg3,save,genapinum
 		if not Local:
 			url2 = GenList[genapinum%3]+dblink
 			try:
-				r = requests.get(url2,headers={'User-Agent':ua.random},proxies=proxy,timeout=10)
+				r = requests.get(url2,headers={'User-Agent':ua.random},timeout=10)
 			except requests.exceptions.ReadTimeout:
 				print("*Error : Timeout")
 				return ""
@@ -151,22 +118,19 @@ class Search:
 					switch += 1
 					genapinum += 1
 					print("*Error : Too Many Requests. Switch to another API.")
-					Search.GetInfo(dblink,proxy,switch=switch)
+					Search.GetInfo(dblink,switch=switch)
 				else:
 					print("*Error : Too Many Requests. Wait for 300 seconds to retry")
 					time.sleep(300)
-					Search.GetInfo(dblink,proxy,switch=0)
+					Search.GetInfo(dblink,switch=0)
 				return
-			'''proxy2 = get_proxy()
-			Search.GetInfo(dblink,proxy2)
-			return'''
 		res = r.json() if not Local else Gen.gen_douban(dblink)
 		if not res['success']: # Success
 			if res['error'] == "GenHelp was banned by Douban." and switch<3:
 				print("*Error :",res['error'],"Switch to another API.")
 				switch += 1
 				genapinum += 1
-				Search.GetInfo(dblink,proxy,switch=switch)
+				Search.GetInfo(dblink,switch=switch)
 				return
 			else:
 				print("*Error :",res['error'])
@@ -232,13 +196,13 @@ class Search:
 			if ZH_ENG: #中英標題
 				titleEN = ""
 				for tt in AllTitle2:
-					if not checkzh(tt):
+					if not Get.checkzh(tt):
 						if tt in AllTitle2:
 							AllTitle2.remove(tt)
 						titleEN = tt.replace(" : ","：").replace(": ","：")
 						break
 				for tt in [titleZH]+aka:
-					if checkzh(tt):
+					if Get.checkzh(tt):
 						if tt in AllTitle2:
 							AllTitle2.remove(tt)
 						titleZH = tt.replace(" : ","：").replace(": ","：")
@@ -260,33 +224,48 @@ print("dbLink :",dblink)
 if dblink:
 	print(Search.GetInfo(dblink,proxies))'''
 
-#built_proxy()
-proxies = get_proxy() if UseProxy else ""
 mypath = os.getcwd() if not Remote else remote #執行目錄
 Logfile = LogPath+"\\move.log" if LogPath else "move.log"
 
 for folder in folderList:
 	if os.path.isdir(folder): #如果指定的資料夾存在
 		for d in os.listdir(folder):
-			subtype = ""
+			subtype,IMDbID = "",""
 			folderpath = "%s/%s" % (folder,d)
 			print("\nFolder :",d)
-			if re.search(r"\(db_(.+?)\)",d):
+
+			if re.search(r"\(db_(.+?)\)",d): #如果能從資料夾名稱找到dbID
 				dblink = "https://movie.douban.com/subject/%s/" % (re.search(r"\(db_(.+?)\)",d).group(1))
-			elif re.search(r"\(tt(.+?)\)",d):
+			elif re.search(r"\(tt(.+?)\)",d): #如果能從資料夾名稱找到IMDbID
 				IMDbID = re.search(r"\(tt(.+?)\)",d)
 				print("IMDbID :",IMDbID)
 				dblink = Get.imdb2db(IMDbID)
-			elif Get.nfo_imdb(folderpath):
+			elif Get.nfo_imdb(folderpath): #如果能從資料夾內的.nfo找到IMDbID
 				IMDbID = Get.nfo_imdb(folderpath)
 				print("IMDbID :",IMDbID)
 				dblink = Get.imdb2db(IMDbID)
 			else:
 				dblink = Search.DB(d)
-			if dblink:
+
+			if dblink: #如果能返回豆瓣鏈接
 				print("dbLink :",dblink)
-				name = Search.GetInfo(dblink,proxies)
+				name = Search.GetInfo(dblink)
+				if not name and IMDbID: #如果無法從dblink找到資料，但存在IMDbID
+					GetTMDb = Get.IMDb2TMDb(IMDbID)
+					if GetTMDb:
+						subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
+						print("Change : IMDb&TMDb")
+					else:
+						subtype,year,reg1,name,save = "","","","",""
+			elif not dblink and IMDbID: #如果無法返回dbLink，但有IMDbID→改用TMDB跟IMDb搜尋資訊
+				GetTMDb = Get.IMDb2TMDb(IMDbID)
+				if GetTMDb:
+					subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
+					print("Change : IMDb&TMDb")
+				else:
+					subtype,year,reg1,name,save = "","","","",""
 			else:
+				print("*Error : Can't find dbLink.")
 				continue
 			if name:
 				print("Subtype:",subtype)
@@ -316,4 +295,7 @@ for folder in folderList:
 			#os.popen(command)
 			os.system(command)
 			print("MoveTo :",path2)
-			SaveLog("%s,%s,%s" % (save,d,Path))
+			if IMDbID:
+				SaveLog("%s,%s,%s" % (save,IMDbID,Path))
+			else:
+				SaveLog("%s,%s,%s" % (save,d,Path))
