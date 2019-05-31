@@ -89,12 +89,14 @@ def move(src,dst):
 				os.rename(src_path,dst_path)
 def SaveLog(save):
 	if subtype == "movie":
-		CSVName2 = "%s_Movie_%s.csv" % (CSVName,year)
+		#CSVName2 = "%s_Movie_%s.csv" % (CSVName,year)
+		CSVName2 = "%s_Movie.csv" % (CSVName)
 	elif subtype == "tv":
-		CSVName2 = "%s_TV_%s_%s.csv" % (CSVName,reg1,year)
+		#CSVName2 = "%s_TV_%s_%s.csv" % (CSVName,reg1,year)
+		CSVName2 = "%s_TV_%s.csv" % (CSVName,reg1)
 	fname = LogPath+"\\"+CSVName2
 	if not os.path.isfile(fname):
-		save = "年份,地區,IMDb評分,豆瓣評分,中文標題,英文標題,其他標題,類型,IMDb_id,db_id\n"+save
+		save = "年份,地區,IMDb,豆瓣,中文標題,英文標題,其他標題,類型,IMDb_id,db_id,Path\n"+save
 	with open(fname,"a", encoding = 'utf-8-sig') as sdata: #寫檔
 		sdata.write(save+"\n")
 
@@ -103,7 +105,7 @@ class Search:
 		global subtype , dblink
 		key2 = key1
 		for i in range(len(key1),0,-1): #去除冗贅資料，以便查詢
-			if i-1 > 0 and key1[i-4:i].isdigit():
+			if i-1 > 0 and key1[i-4:i].isdigit() and key1[i-4:i] != "1080" and key1[i-4:i] != "2160":
 				key2 = key1[:key1.find(key1[i-4:i])]
 				if key2 != "":
 					print("Change :",key2)
@@ -207,12 +209,18 @@ class Search:
 			if CHT_TW: #繁體、台灣譯名
 				if this_title != "" and reg1 == "台湾": #原始標題為中文地區是台灣)
 					titleZH = this_title
+				breakcheck = False
+				zhtwList = ["(台)","(港/台)","(台/港)","（台）","（港/台）","（台/港）"]
 				for trans in AllTitle2:
-					if "(台)" in trans:
-						if trans in AllTitle2:
-							AllTitle2.remove(trans)
-						titleZH = trans.replace("(台)","")
-						break
+					for zhtw in zhtwList:
+						if zhtw in trans:
+							if trans in AllTitle2:
+								AllTitle2.remove(trans)
+							breakcheck = True
+							titleZH = trans.replace(zhtw,"")
+							break
+					if breakcheck:
+						break 
 				titleZH = OpenCC('s2twp').convert(titleZH)
 				genre = OpenCC('s2twp').convert(genre)
 				reg1 = OpenCC('s2twp').convert(reg1)
@@ -251,7 +259,7 @@ print("dbLink :",dblink)
 if dblink:
 	print(Search.GetInfo(dblink,proxies))'''
 
-built_proxy()
+#built_proxy()
 proxies = get_proxy() if UseProxy else ""
 mypath = os.getcwd() if not Remote else remote #執行目錄
 Logfile = LogPath+"\\move.log" if LogPath else "move.log"

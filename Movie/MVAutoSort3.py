@@ -13,7 +13,7 @@ UseProxy = False #是否使用Proxy
 Remote = True #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端上操作)
 remote = "16tn:" #承上，遠端路徑
 Local = True #使用本地搜尋(gen.py)
-LogPath = "D:\\AutoSortLog" #默認為執行目錄
+LogPath = "C:\\AutoSortLog" #默認為執行目錄
 CSVName = "AutoSort"
 SaveExcel = False #!未啟用
 YearSort = True #老舊電影合併存放
@@ -102,16 +102,16 @@ class Search:
 	def DB(key1,Manual=False): #Manual為手動整理參數 !暫未完成
 		global subtype , dblink
 		key2 = key1
-		for i in range(len(key1),0,-1): #去除冗贅資料，以便查詢
+		'''for i in range(len(key1),0,-1): #去除冗贅資料，以便查詢
 			if i-1 > 0 and key1[i-4:i].isdigit():
 				key2 = key1[:key1.find(key1[i-4:i])]
 				if key2 != "":
 					print("Change :",key2)
 				else:
 					key2 = key1
-				break
-		'''key2 = key1[key1.rfind("]")+1:]
-		print("Change :",key2)'''
+				break'''
+		key2 = key1[key1.rfind("]")+1:]
+		print("Change :",key2)
 
 		url = dbapi+key2
 		resjson(url)
@@ -207,12 +207,18 @@ class Search:
 			if CHT_TW: #繁體、台灣譯名
 				if this_title != "" and reg1 == "台湾": #原始標題為中文地區是台灣)
 					titleZH = this_title
+				breakcheck = False
+				zhtwList = ["(台)","(港/台)","(台/港)","（台）","（港/台）","（台/港）"]
 				for trans in AllTitle2:
-					if "(台)" in trans:
-						if trans in AllTitle2:
-							AllTitle2.remove(trans)
-						titleZH = trans.replace("(台)","")
-						break
+					for zhtw in zhtwList:
+						if zhtw in trans:
+							if trans in AllTitle2:
+								AllTitle2.remove(trans)
+							breakcheck = True
+							titleZH = trans.replace(zhtw,"")
+							break
+					if breakcheck:
+						break 
 				titleZH = OpenCC('s2twp').convert(titleZH)
 				genre = OpenCC('s2twp').convert(genre)
 				reg1 = OpenCC('s2twp').convert(reg1)
