@@ -6,6 +6,8 @@
 pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bbcode
 
 ## 說明
+未完成待續
+
 ### 搜尋模式
 
 - 若資料夾名稱含有IMDbID(tt:d)或DoubanID(db_:d)，則使用ID搜尋對應資料
@@ -14,7 +16,21 @@ pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bb
 
 - 若以上皆非，則解析文件夾名稱調用豆瓣API做搜尋
 
-通常文件夾名稱由3個部分組成 $電影名稱.$年份.$壓制參數，目前採用以$年份為錨點解析出$電影名稱的方式 
+  - 通常文件夾名稱由3個部分組成 $電影名稱.$年份.$壓制參數，目前採用以$年份為錨點解析出$電影名稱的方式 
+  
+### 資料採集
+
+- 原採用PT-Gen的API，但受其穩定性&API調用次數限制，故後來棄用。 (若要啟用將Local=False即可)
+
+- 改採參照其代碼簡化成gen.py，以此採集資料。感謝@Rhilip大佬、BFDZ大佬的PT-Gen。
+
+### 自動分類
+
+#### 標題
+
+- 中文標題優先採取台灣地區翻譯標題，若為標記則採用豆瓣中文標題，並使用OpenCC翻譯成繁體中文
+
+- 英文標題為在所有標題清單中找到由純英文組成之標題，若無英文標題則只使用中文標題
 
 ## 待加入功能
 
