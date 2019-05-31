@@ -3,6 +3,7 @@ __pycache__/
 Movie/__pycache__/
 Movie/Test/
 Movie/test.py
+Movie/MVAutoSort3.py
 *.py[cod]
 *$py.class
 
