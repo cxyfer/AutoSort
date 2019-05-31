@@ -24,6 +24,8 @@ pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bb
 
 - 改採參照其代碼簡化成gen.py，以此採集資料。感謝@Rhilip大佬、BFDZ大佬的PT-Gen。
 
+- 如果無法從豆瓣找到資料，則透過IMDbID在IMDb&TMDb分別搜尋資料，並合併
+
 ### 自動分類
 
 #### 標題
