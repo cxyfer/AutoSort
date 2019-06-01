@@ -240,10 +240,13 @@ for folder in folderList:
 				IMDbID = re.search(r"\(tt(.+?)\)",d)
 				print("IMDbID :",IMDbID)
 				dblink = Get.imdb2db(IMDbID)
-			elif Get.nfo_imdb(folderpath): #如果能從資料夾內的.nfo找到IMDbID
-				IMDbID = Get.nfo_imdb(folderpath)
-				print("IMDbID :",IMDbID)
-				dblink = Get.imdb2db(IMDbID)
+			elif Get.findnfo(folderpath): #如果能從資料夾內的.nfo找到IMDb或douban鏈接
+				get_nfo = Get.findnfo(folderpath)
+				if 'imdb' in get_nfo.keys():
+					print("IMDbID :",get_nfo['imdb'])
+					dblink = Get.imdb2db(IMDbID)
+				elif 'douban' in get_nfo.keys():
+					dblink = get_nfo['douban']
 			else:
 				dblink = Search.DB(d)
 

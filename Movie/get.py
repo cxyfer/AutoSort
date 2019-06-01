@@ -27,15 +27,20 @@ def checkzh(text):
         if ord(t) > 255:
             return True
 
-def nfo_imdb(path):
+def findnfo(path):
     for file in sorted(os.listdir(path)):
         filepath = "%s\\%s" % (path,file)
         if os.path.isfile(filepath) and re.match(r'.+?\.nfo', file):
             nfo = re.match(r'.+?\.nfo', file).group()
             with open(filepath, "r", encoding="latin-1") as data: 
                 for line in data:
-                    if re.search(r"http://www.imdb.com/title/(.+?)",line):
-                        return re.search(r"http://www\.imdb\.com/title/(.+).",line).group(1)
+                    imdb_search = re.search(r"http://www.imdb.com/title/(tt\d+)",line)
+                    if imdb_search:
+                        return {'imdb':imdb_search.group(1)}
+                    db_search = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",line)
+                    if db_search:
+                        return {'douban':db_search.group()}
+
 
 def imdb2db(IMDbID):
     imdb2db = "https://api.douban.com/v2/movie/imdb/%s?apikey=0df993c66c0c636e29ecbb5344252a4a" % (IMDbID)
