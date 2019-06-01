@@ -244,7 +244,7 @@ for folder in folderList:
 				get_nfo = Get.findnfo(folderpath)
 				if 'imdb' in get_nfo.keys():
 					print("IMDbID :",get_nfo['imdb'])
-					dblink = Get.imdb2db(IMDbID)
+					dblink = Get.imdb2db(get_nfo['imdb'])
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
 			else:
