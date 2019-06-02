@@ -30,8 +30,7 @@ def checkzh(text):
 def findnfo(path):
     for file in sorted(os.listdir(path)):
         filepath = "%s\\%s" % (path,file)
-        if os.path.isfile(filepath) and re.match(r'.+?\.nfo', file):
-            nfo = re.match(r'.+?\.nfo', file).group()
+        if os.path.isfile(filepath) and ( re.match(r'.+?\.nfo', file) or re.match(r'.+?\.txt', file) ):
             with open(filepath, "r", encoding="latin-1") as data: 
                 for line in data:
                     imdb_search = re.search(r"http://www.imdb.com/title/(tt\d+)",line)
@@ -104,7 +103,7 @@ def IMDb2TMDb(IMDbID):
                         titleEN = tt.replace(" : ","：").replace(": ","：")
                         break
             title = (titleZH+" "+ titleIMDb) if  titleIMDb and len(titleIMDb) <= ENGlen else titleZH
-            save = "%s,%s,%s,,%s,%s,%s,%s,%s,%s" % (year,reg1,IMDbRating,titleZH,titleEN.replace(",","，"),"／".join(AllTitle2).replace(",","，"),genres,IMDbID,TMDbID)
+            save = "%s\t%s\t%s\t%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (IMDbID,year,reg1,IMDbRating,titleZH,titleEN,"／".join(AllTitle2),genres,IMDbID,TMDbID)
             name = "[%s][%s]%s(%s)(%s)(%s)" % (year,reg2,title,genres.replace("|","_"),IMDbRating,IMDbID)
             return [subtype,year,reg1,name,save]
 

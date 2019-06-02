@@ -1,3 +1,7 @@
+# ！/usr/bin/python3
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019-2020 GDST <gdst.tw@gmail.com>
+
 import json , requests ,random ,os,re,time
 from lxml import etree
 from opencc import OpenCC
@@ -5,6 +9,7 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import gen as Gen
 import get as Get
+import sql
 
 #Parameter
 CHT_TW = True #優先取台灣譯名，且轉為繁體；若為False則為豆瓣上簡體中文標題
@@ -14,7 +19,7 @@ Remote = True #將路徑替換為遠端路徑 (讀取掛載信息，但在遠端
 remote = "16tn:" #承上，遠端路徑
 Local = True #使用本地搜尋(gen.py)
 LogPath = "D:\\AutoSortLog" #默認為執行目錄
-CSVName = "AutoSort"
+LogName = "AutoSort"
 SaveExcel = False #!未啟用
 YearSort = True #老舊電影合併存放
 Manual = 0 #0為全自動；1為遇到錯誤時切換為手動；2為自動搜尋手動確認 !未啟用
@@ -32,6 +37,11 @@ GenList = [genapi1,genapi2,genapi3]
 genapinum = 0 #用來切換API
 ua = UserAgent()
 regDic = {}
+
+#SQL
+db_name = "%s\\%s.db" % (LogPath,LogName) if LogPath else LogName+".db"
+sql.init(db_name,"Movie")
+sql.init(db_name,"TV")
 
 with open("folder.txt" , "r", encoding = 'utf-8-sig') as data: #只在這些子資料夾執行
 	folderList = [l.strip() for l in data ]
@@ -59,14 +69,14 @@ def move(src,dst):
 				os.rename(src_path,dst_path)
 def SaveLog(save):
 	if subtype == "movie":
-		#CSVName2 = "%s_Movie_%s.csv" % (CSVName,year)
-		CSVName2 = "%s_Movie.csv" % (CSVName)
+		#LogName2 = "%s_Movie_%s.csv" % (LogName,year)
+		LogName2 = "%s_Movie.tsv" % (LogName)
 	elif subtype == "tv":
-		#CSVName2 = "%s_TV_%s_%s.csv" % (CSVName,reg1,year)
-		CSVName2 = "%s_TV_%s.csv" % (CSVName,reg1)
-	fname = LogPath+"\\"+CSVName2
+		#LogName2 = "%s_TV_%s_%s.csv" % (LogName,reg1,year)
+		LogName2 = "%s_TV_%s.tsv" % (LogName,reg1)
+	fname = LogPath+"\\"+LogName2
 	if not os.path.isfile(fname):
-		save = "年份,地區,IMDb,豆瓣,中文標題,英文標題,其他標題,類型,IMDb_id,db_id,Path\n"+save
+		save = "年份\t地區\tIMDb\t豆瓣\t中文標題\t英文標題\t其他標題\t類型\tIMDb_id\tdb_id\tPath\n"+save
 	with open(fname,"a", encoding = 'utf-8-sig') as sdata: #寫檔
 		sdata.write(save+"\n")
 
@@ -81,9 +91,10 @@ class Search:
 					print("Change :",key2)
 				else:
 					key2 = key1
-				break
-		'''key2 = key1[key1.rfind("]")+1:]
-		print("Change :",key2)'''
+		Bracket = re.search(r"\[(.+?)\]",key2) #搜尋中括弧
+		if Bracket:
+			key2 = Bracket.group(1)
+			print("Change :",key2)
 
 		url = dbapi+key2
 		res = resjson(url)
@@ -134,8 +145,11 @@ class Search:
 				return
 			else:
 				print("*Error :",res['error'])
+				return ""
 		else:
 			year = res['year']
+			if not year:
+				year = res['playdate'][0][:4]
 			titleZH = res['chinese_title'] #中文標題
 			this_title = res['this_title'][0] #原始標題
 			trans_title = res['trans_title'] #List 用來取台灣譯名
@@ -212,7 +226,7 @@ class Search:
 
 			region = reg2 if regSt else reg1
 			titleOT = [] if not titleOT else titleOT
-			save = "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (year,reg1,imdb_rating,db_rating,titleZH,titleEN.replace(",","，"),"／".join(titleOT).replace(",","，"),genre,imdb_id,db_id)
+			save = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (mvid,year,reg1,imdb_rating,db_rating,titleZH,titleEN,"／".join(titleOT),genre,imdb_id,db_id)
 			if float(rating):
 				return "[%s][%s]%s(%s)(%s)(%s)" % (year,region,title,genre.replace("|","_"),rating,mvid)
 			else:
@@ -237,21 +251,20 @@ for folder in folderList:
 			if re.search(r"\(db_(.+?)\)",d): #如果能從資料夾名稱找到dbID
 				dblink = "https://movie.douban.com/subject/%s/" % (re.search(r"\(db_(.+?)\)",d).group(1))
 			elif re.search(r"\(tt(.+?)\)",d): #如果能從資料夾名稱找到IMDbID
-				IMDbID = re.search(r"\(tt(.+?)\)",d)
+				IMDbID = re.search(r"\((tt\d+)\)",d).group(1)
 				print("IMDbID :",IMDbID)
 				dblink = Get.imdb2db(IMDbID)
 			elif Get.findnfo(folderpath): #如果能從資料夾內的.nfo找到IMDb或douban鏈接
 				get_nfo = Get.findnfo(folderpath)
 				if 'imdb' in get_nfo.keys():
-					print("IMDbID :",get_nfo['imdb'])
+					IMDbID = get_nfo['imdb']
+					print("IMDbID :",IMDbID)
 					dblink = Get.imdb2db(get_nfo['imdb'])
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
 			else:
 				dblink = Search.DB(d)
-
 			if dblink: #如果能返回豆瓣鏈接
-				print("dbLink :",dblink)
 				name = Search.GetInfo(dblink)
 				if not name and IMDbID: #如果無法從dblink找到資料，但存在IMDbID
 					GetTMDb = Get.IMDb2TMDb(IMDbID)
@@ -285,12 +298,14 @@ for folder in folderList:
 				elif int(year)<=1980:
 					year = "1980以前"
 			if subtype == "movie":
+				table_name = "Movie"
 				Path = ("Movie\\%s\\%s" % (year,name))
 			elif subtype == "tv":
+				table_name = "TV"
 				Path = ("TVSeries\\%s\\%s\\%s" % (reg1,year,name))
 			path1 = mypath+"\\"+folder+"\\"+d
-			path2 = mypath+"\\"+Path+"\\"+d if SubFolder else mypath+"\\"+Path
-			if len(path2) > pathlen: #路徑長度
+			path2 = mypath+"\\"+Path+"\\"+d if SubFolder or subtype == "tv" else mypath+"\\"+Path
+			if len(path2) > pathlen and not subtype == "tv" : #路徑長度(但對TV類型不啟用)
 				path2 = mypath+"\\"+Path
 			#command = ("rclone move -v \"%s\" \"%s\"" %(path1,path2))
 			command = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(path1,path2,Logfile))
@@ -299,6 +314,7 @@ for folder in folderList:
 			os.system(command)
 			print("MoveTo :",path2)
 			if IMDbID:
-				SaveLog("%s,%s,%s" % (save,IMDbID,Path))
+				SaveLog("%s\t%s\t%s" % (save,IMDbID,Path))
 			else:
-				SaveLog("%s,%s,%s" % (save,d,Path))
+				SaveLog("%s\t%s\t%s" % (save,d,Path))
+			sql.input(db_name, table_name, save.split("\t")+[Path])
