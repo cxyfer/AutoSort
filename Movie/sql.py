@@ -63,16 +63,10 @@ def output(db_name,table_name,file_name):
 		for row in cursor.execute(execute):
 			writeRow = "\t".join('%s' % r for r in row)+"\n"
 			write_file.write(writeRow)
-
-#init(db_name,table_name)
-
-'''
-db_name = "AutoSort.db"
-table_name = "Movie"
-
-#匯出用
-#output(db_name,table_name,"Movie.tsv")
-
-#匯入用
-List = build_tsv("IN.tsv")
-input(db_name,table_name,List,many=True,replace=True)'''
+def query(db_name,table_name,sid):
+	conn = sqlite3.connect(db_name)
+	cursor = conn.cursor()
+	execute = "SELECT * From %s WHERE SID = ?" % (table_name)
+	result = cursor.execute(execute, [sid]).fetchone()
+	cursor.close()
+	conn.close()

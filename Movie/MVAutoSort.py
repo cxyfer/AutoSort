@@ -25,8 +25,9 @@ YearSort = True #老舊電影合併存放
 Manual = 0 #0為全自動；1為遇到錯誤時切換為手動；2為自動搜尋手動確認 !未啟用
 SearchMod = 0 #搜尋模式，0為使用原始資料夾名稱；1為 !未啟用
 SubFolder = True #是否保留原始資料夾名稱，將其設為子資料夾 (當觸發pathlen限制時則不保留)
-pathlen = 165 #路徑長度限制(僅計算資料夾)。若不想啟用輸入極大值即可，觸發後將不建立子資料夾
+pathlen = 180 #路徑長度限制(僅計算資料夾)。若不想啟用輸入極大值即可，觸發後將不建立子資料夾
 ENGlen = 65 #英文標題長度限制，若過長則僅保留中文標題。若不想啟用輸入極大值即可
+DataUpdate = True #資料是否更新，True為會將舊資料更新為新資料且移動資料夾，False會依據資料庫內現有資料做資料夾命名
 
 #Initialize
 dbapi = "https://api.douban.com/v2/movie/search?apikey=0dad551ec0f84ed02907ff5c42e8ec70&q="
@@ -76,9 +77,13 @@ def SaveLog(save):
 		LogName2 = "%s_TV_%s.tsv" % (LogName,reg1)
 	fname = LogPath+"\\"+LogName2
 	if not os.path.isfile(fname):
-		save = "年份\t地區\tIMDb\t豆瓣\t中文標題\t英文標題\t其他標題\t類型\tIMDb_id\tdb_id\tPath\n"+save
+		save = "Folder\tSID\tRename\n"+save
 	with open(fname,"a", encoding = 'utf-8-sig') as sdata: #寫檔
 		sdata.write(save+"\n")
+def LogNPrint(text):
+	print(text)
+	with open(LogPath+"//AutoSort.log","a", encoding = 'utf8') as data:
+		data.write(str(text)+"\n")
 
 class Search:
 	def DB(key1,Manual=False): #Manual為手動整理參數 !暫未完成
@@ -86,7 +91,7 @@ class Search:
 		key2 = key1
 		for i in range(len(key1),0,-1): #去除冗贅資料，以便查詢
 			if i-1 > 0 and key1[i-4:i].isdigit() and key1[i-4:i] != "1080" and key1[i-4:i] != "2160":
-				key2 = key1[:key1.find(key1[i-4:i])]
+				key2 = key1[:key1.find(key1[i-4:i])] 
 				if key2 != "":
 					print("Change :",key2)
 				else:
@@ -147,16 +152,19 @@ class Search:
 				print("*Error :",res['error'])
 				return ""
 		else:
-			year = res['year']
+			if not subtype:
+				subtype = "tv" if res['episodes'] else "movie"
+			year = year2 = res['year']
 			if not year:
 				year = res['playdate'][0][:4]
+			'''if int(len(res['seasons_list'])) > 1 and subtype == "tv": #多季的電視劇
+				year = 999 #多季
+				year2 = "多季"'''
 			titleZH = res['chinese_title'] #中文標題
 			this_title = res['this_title'][0] #原始標題
 			trans_title = res['trans_title'] #List 用來取台灣譯名
 			aka = res['aka']
-			episodes = res['episodes']
-			if not subtype:
-				subtype = "tv" if episodes else "movie"
+
 			try:
 				imdb_id = res['imdb_id']
 			except KeyError:
@@ -221,76 +229,77 @@ class Search:
 							AllTitle2.remove(tt)
 						titleZH = tt.replace(" : ","：").replace(": ","：")
 						break
-				title = (titleZH+" "+titleEN) if titleEN and len(titleEN) <= ENGlen else titleZH
+				title = (titleZH+" "+titleEN) if titleEN and len(titleEN) <= ENGlen and titleZH != titleEN else titleZH
 			titleOT = AllTitle2
 
 			region = reg2 if regSt else reg1
 			titleOT = [] if not titleOT else titleOT
 			save = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (mvid,year,reg1,imdb_rating,db_rating,titleZH,titleEN,"／".join(titleOT),genre,imdb_id,db_id)
 			if float(rating):
-				return "[%s][%s]%s(%s)(%s)(%s)" % (year,region,title,genre.replace("|","_"),rating,mvid)
+				return "[%s][%s]%s(%s)(%s)(%s)" % (year2,region,title,genre.replace("|","_"),rating,mvid)
 			else:
-				return "[%s][%s]%s(%s)(%s)" % (year,region,title,genre.replace("|","_"),mvid)
-'''Test
-key = "Apollo 11 2019 BluRay 720p DTS x264-MTeam"
-dblink = Search.DB(key)
-print("dbLink :",dblink)
-if dblink:
-	print(Search.GetInfo(dblink,proxies))'''
+				return "[%s][%s]%s(%s)(%s)" % (year2,region,title,genre.replace("|","_"),mvid)
 
 mypath = os.getcwd() if not Remote else remote #執行目錄
 Logfile = LogPath+"\\move.log" if LogPath else "move.log"
 
 for folder in folderList:
 	if os.path.isdir(folder): #如果指定的資料夾存在
-		for d in os.listdir(folder):
-			subtype,IMDbID = "",""
+		for d in sorted(os.listdir(folder)):
+			subtype,IMDbID= "",""
 			folderpath = "%s/%s" % (folder,d)
-			print("\nFolder :",d)
-
+			SubD = False if re.match(r'.+?\.mkv|mp4|ts', d) else SubFolder #若資料夾為檔案名稱，則不使用SubFolder
+			LogNPrint("\nFolder : "+d)
 			if re.search(r"\(db_(.+?)\)",d): #如果能從資料夾名稱找到dbID
+				SubD = False
 				dblink = "https://movie.douban.com/subject/%s/" % (re.search(r"\(db_(.+?)\)",d).group(1))
 			elif re.search(r"\(tt(.+?)\)",d): #如果能從資料夾名稱找到IMDbID
+				SubD = False
 				IMDbID = re.search(r"\((tt\d+)\)",d).group(1)
-				print("IMDbID :",IMDbID)
+				LogNPrint("IMDbID : "+IMDbID)
 				dblink = Get.imdb2db(IMDbID)
 			elif Get.findnfo(folderpath): #如果能從資料夾內的.nfo找到IMDb或douban鏈接
 				get_nfo = Get.findnfo(folderpath)
 				if 'imdb' in get_nfo.keys():
 					IMDbID = get_nfo['imdb']
-					print("IMDbID :",IMDbID)
+					LogNPrint("IMDbID : "+IMDbID)
 					dblink = Get.imdb2db(get_nfo['imdb'])
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
 			else:
 				dblink = Search.DB(d)
 			if dblink: #如果能返回豆瓣鏈接
+				LogNPrint("dbLink : "+dblink)
 				name = Search.GetInfo(dblink)
 				if not name and IMDbID: #如果無法從dblink找到資料，但存在IMDbID
 					GetTMDb = Get.IMDb2TMDb(IMDbID)
 					if GetTMDb:
 						subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
-						print("Change : IMDb&TMDb")
+						LogNPrint("Change : IMDb&TMDb")
 					else:
 						subtype,year,reg1,name,save = "","","","",""
 			elif not dblink and IMDbID: #如果無法返回dbLink，但有IMDbID→改用TMDB跟IMDb搜尋資訊
 				GetTMDb = Get.IMDb2TMDb(IMDbID)
 				if GetTMDb:
 					subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
-					print("Change : IMDb&TMDb")
+					LogNPrint("Change : IMDb&TMDb")
 				else:
+					LogNPrint("*Error : Can't find info from IMDb&TMDb.")
 					subtype,year,reg1,name,save = "","","","",""
 			else:
-				print("*Error : Can't find dbLink.")
+				LogNPrint("*Error : Can't find dbLink.")
 				continue
+
 			if name:
-				print("Subtype:",subtype)
-				print("Rename :",name)
+				name = name.replace("\"","")
+				LogNPrint("Subtype: "+subtype)
 			else:
 				continue
 			if YearSort:
 				if int(year) > 2000:
 					year = year
+				#elif int(year) == 999:
+				#	year = "多季"
 				elif 1991<=int(year) and int(year)<=2000:
 					year = "1991-2000"
 				elif 1981<=int(year) and int(year)<=1990:
@@ -303,18 +312,10 @@ for folder in folderList:
 			elif subtype == "tv":
 				table_name = "TV"
 				Path = ("TVSeries\\%s\\%s\\%s" % (reg1,year,name))
-			path1 = mypath+"\\"+folder+"\\"+d
-			path2 = mypath+"\\"+Path+"\\"+d if SubFolder or subtype == "tv" else mypath+"\\"+Path
-			if len(path2) > pathlen and not subtype == "tv" : #路徑長度(但對TV類型不啟用)
-				path2 = mypath+"\\"+Path
-			#command = ("rclone move -v \"%s\" \"%s\"" %(path1,path2))
-			command = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(path1,path2,Logfile))
-			command2 = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(path1,path2,Logfile))
-			#os.popen(command)
-			os.system(command)
-			print("MoveTo :",path2)
-			if IMDbID:
-				SaveLog("%s\t%s\t%s" % (save,IMDbID,Path))
-			else:
-				SaveLog("%s\t%s\t%s" % (save,d,Path))
-			sql.input(db_name, table_name, save.split("\t")+[Path])
+
+			query = sql.query(db_name, table_name,save.split("\t")[0]) #查詢舊有資料
+			if query != None and not DataUpdate: #若存在舊有資料且不須更新現有資料
+				Path = query[-1]
+				name = Path[Path.rfind("\\")+1:]
+			elif query != None and DataUpdate: #若存在舊有資料且與新的資料不相符(數據更新)且更新資料參數為True
+		

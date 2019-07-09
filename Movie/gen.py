@@ -98,6 +98,7 @@ def gen_douban(dblink):
 
         region_anchor = douban_page.find("span", class_="pl", text=re.compile("制片国家/地区"))
         language_anchor = douban_page.find("span", class_="pl", text=re.compile("语言"))
+        seasons_anchor = douban_page.find("span", class_="pl", text=re.compile("季数"))
         episodes_anchor = douban_page.find("span", class_="pl", text=re.compile("集数"))
         imdb_link_anchor = douban_page.find("a", text=re.compile("tt\d+"))
         year_anchor = douban_page.find("span", class_="year")
@@ -111,6 +112,8 @@ def gen_douban(dblink):
         data["imdb_link"] = imdb_link_anchor.attrs["href"] if imdb_link_anchor else ""  # IMDb链接
         data["imdb_id"] = imdb_link_anchor.text if imdb_link_anchor else ""  # IMDb号
         data["episodes"] = fetch(episodes_anchor) if episodes_anchor else ""  # 集数
+        data["seasons_list"] = [option.get("value") for option in douban_page.find("select", id="season").find_all("option")] if seasons_anchor else []  #季數
+        data["seasons"] = douban_page.find("select", id="season").find_all("option")[-1].getText() if seasons_anchor else ""  #季數
 
         duration_anchor = douban_page.find("span", class_="pl", text=re.compile("单集片长"))
         runtime_anchor = douban_page.find("span", property="v:runtime")
