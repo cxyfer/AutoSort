@@ -111,10 +111,12 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# TestFile
+#JAV
 JAV/Test/
 JAV/@~Sorted/
 JAV/@CodeList.txt
 JAV/@FileList.txt
 JAV/Key_nyaa.txt
 JAV/data.txt
+JAV/sign.png
+JAV/sign2.png

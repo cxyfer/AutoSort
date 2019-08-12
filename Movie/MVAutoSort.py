@@ -25,7 +25,7 @@ YearSort = True #老舊電影合併存放
 Manual = 0 #0為全自動；1為遇到錯誤時切換為手動；2為自動搜尋手動確認 !未啟用
 SearchMod = 0 #搜尋模式，0為使用原始資料夾名稱；1為 !未啟用
 SubFolder = True #是否保留原始資料夾名稱，將其設為子資料夾 (當觸發pathlen限制時則不保留)
-pathlen = 180 #路徑長度限制(僅計算資料夾)。若不想啟用輸入極大值即可，觸發後將不建立子資料夾
+pathlen = 200 #路徑長度限制(僅計算資料夾)。若不想啟用輸入極大值即可，觸發後將不建立子資料夾
 ENGlen = 65 #英文標題長度限制，若過長則僅保留中文標題。若不想啟用輸入極大值即可
 DataUpdate = True #資料是否更新，True為會將舊資料更新為新資料且移動資料夾，False會依據資料庫內現有資料做資料夾命名
 
@@ -318,4 +318,19 @@ for folder in folderList:
 				Path = query[-1]
 				name = Path[Path.rfind("\\")+1:]
 			elif query != None and DataUpdate: #若存在舊有資料且與新的資料不相符(數據更新)且更新資料參數為True
-		
+				sql.input(db_name, table_name, save.split("\t")+[Path],replace=True)
+				command2 = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(mypath+"\\"+query[-1],mypath+"\\"+Path,Logfile))
+				os.system(command2)
+			else: #資料庫內無對應資料
+				sql.input(db_name, table_name, save.split("\t")+[Path])
+
+			LogNPrint("Rename : "+name)
+			path1 = mypath+"\\"+folder+"\\"+d
+			path2 = mypath+"\\"+Path+"\\"+d if SubD or subtype == "tv" else mypath+"\\"+Path
+			if len(path2) > pathlen and not subtype == "tv" : #路徑長度(但對TV類型不啟用)
+				path2 = mypath+"\\"+Path
+			command = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(path1,path2,Logfile))
+			os.system(command)
+			LogNPrint("MoveTo : "+path2)
+		command = ("rclone rmdirs -v \"%s\"" % (mypath+"\\"+folder))
+		os.system(command)
