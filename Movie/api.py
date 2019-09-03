@@ -1,3 +1,0 @@
-TMDbAPI = "487684639ba857df9c40c9498bcc8b62"
-Rapid_IMDb = "5bd96aa33amshf8dcafe6022035bp16c2d0jsne4823ff6372f"
-

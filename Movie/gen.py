@@ -81,7 +81,7 @@ def gen_douban(dblink):
         # 对主页面进行解析
         data["chinese_title"] = (douban_page.title.text.replace("(豆瓣)", "").strip())
         data["foreign_title"] = (douban_page.find("span", property="v:itemreviewed").text
-                                 .replace(data["chinese_title"], '').strip())
+                                 .replace(data["chinese_title"], '').strip()) if douban_page.find("span", property="v:itemreviewed") else ""
 
         aka_anchor = douban_page.find("span", class_="pl", text=re.compile("又名"))
         data["aka"] = sorted(fetch(aka_anchor).split(' / ')) if aka_anchor else []
@@ -112,8 +112,9 @@ def gen_douban(dblink):
         data["imdb_link"] = imdb_link_anchor.attrs["href"] if imdb_link_anchor else ""  # IMDb链接
         data["imdb_id"] = imdb_link_anchor.text if imdb_link_anchor else ""  # IMDb号
         data["episodes"] = fetch(episodes_anchor) if episodes_anchor else ""  # 集数
-        data["seasons_list"] = [option.get("value") for option in douban_page.find("select", id="season").find_all("option")] if seasons_anchor else []  #季數
-        data["seasons"] = douban_page.find("select", id="season").find_all("option")[-1].getText() if seasons_anchor else ""  #季數
+        season_check = douban_page.find("select", id="season")
+        data["seasons_list"] = [option.get("value") for option in douban_page.find("select", id="season").find_all("option")] if seasons_anchor and season_check else []  #季數
+        data["seasons"] = douban_page.find("select", id="season").find_all("option")[-1].getText() if seasons_anchor and season_check else ""  #季數
 
         duration_anchor = douban_page.find("span", class_="pl", text=re.compile("单集片长"))
         runtime_anchor = douban_page.find("span", property="v:runtime")

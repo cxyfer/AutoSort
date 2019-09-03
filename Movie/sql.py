@@ -70,3 +70,16 @@ def query(db_name,table_name,sid):
 	result = cursor.execute(execute, [sid]).fetchone()
 	cursor.close()
 	conn.close()
+	return result
+#init(db_name,table_name)
+
+'''
+db_name = "AutoSort.db"
+table_name = "Movie"
+
+#匯出用
+#output(db_name,table_name,"Movie.tsv")
+
+#匯入用
+List = build_tsv("IN.tsv")
+input(db_name,table_name,List,many=True,replace=True)'''

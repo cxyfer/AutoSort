@@ -22,7 +22,7 @@ def Merge(code,allpreview,tempfolder="Cache",Column=5,signpic=False): #下載並
 	os.chdir(execdir)
 	for preview in allpreview:
 		ImageDL(preview)
-	imgs = [Image.open(fn) for fn in sorted(os.listdir()) if re.match(r'.+?\.jpg|jpeg|png', fn) and not fn.endswith("_preview.jpg")] #打開所有預覽圖
+	imgs = [Image.open(fn) for fn in sorted(os.listdir()) if re.match(r'.+?\.(jpg|jpeg|png)', fn) and not fn.endswith("_preview.jpg") and os.stat(fn).st_size > 0] #打開所有預覽圖
 
 	width,height=0,0
 	for img in imgs: #獲取長寬(避免尺寸不一)
@@ -33,7 +33,7 @@ def Merge(code,allpreview,tempfolder="Cache",Column=5,signpic=False): #下載並
 	result = Image.new(imgs[0].mode,(width*Column,height*(math.ceil(len(imgs)/Column)) ))
 	for order,img in enumerate(imgs): #貼上圖片
 		width2 , height2 = img.size #尺寸不符的做置中
-		result.paste(img, box=(width*(order%Column)+(width-width2)//2 ,height*(order//Column)+(height-height2)//Column ))
+		result.paste(img, box=(width*(order%Column)+(width-width2)//2 ,height*(order//Column)+(height-height2)//2 ))
 	if signpic : #浮水印
 		signimg = Image.open(signpic)
 		signimg = signimg.convert('RGBA')
@@ -45,7 +45,7 @@ def Merge(code,allpreview,tempfolder="Cache",Column=5,signpic=False): #下載並
 def Sort2Dir(key,code,mypath):
 	global dirpath 
 	number = int(code[code.find("-")+1:])
-	order = "%d~%d" % (number-100,number) if number%100 == 0 else "%d~%d" % ((number//100)*100,(number//100+1)*100)
+	order = "%03d~%03d" % (number-100+1,number) if number%100 == 0 else "%03d~%03d" % ((number//100)*100+1,(number//100+1)*100)
 	dirpath = mypath+"\\@~Sorted\\"+key+"\\"+order+"\\"+code
 	if not os.path.isdir(dirpath):
 		os.makedirs(dirpath)
@@ -55,6 +55,15 @@ def Sort2Dir(key,code,mypath):
 	if not os.path.isfile(coverfile) or os.stat(coverfile).st_size == 0:
 		with open(coverfile, "wb") as imgdata:
 			imgdata.write(r.content)
+	os.chdir(mypath+"\\@~Sorted\\"+key+"\\"+order)
+	coverfile2 = title+".jpg"
+	if not os.path.isfile(coverfile) and not os.path.isfile(coverfile2):
+		try:
+			with open(coverfile2, "wb") as imgdata:
+				imgdata.write(r.content)
+		except:
+			with open(coverfile, "wb") as imgdata:
+				imgdata.write(r.content)
 		print("CoverDL : "+title)
 
 def Database1(key,code,mypath): #搜尋JAVBUS
@@ -76,10 +85,10 @@ def Database1(key,code,mypath): #搜尋JAVBUS
 	title = article.find("h3").getText()
 	coverurl = article.find("a", {"class": "bigImage"}).get("href")
 	allinfo = article.find("div",{"class":"col-md-3 info"}).find_all("p")
-	waterfall = article.find("div",{"id":"sample-waterfall"}).find_all("a",{"class":"sample-box"})
-	allpreview = [prev.get("href").strip() for prev in waterfall]
-
-	code,date,time,dierector,producer,pulisher,series,genre,actress="","","","","","","","",""
+	code,date,time,dierector,producer,pulisher,series,genre,actress,allpreview="","","","","","","","","",[]
+	if article.find("div",{"id":"sample-waterfall"}):
+		waterfall = article.find("div",{"id":"sample-waterfall"}).find_all("a",{"class":"sample-box"})
+		allpreview = [prev.get("href").strip() for prev in waterfall]
 	for nfo in range(len(allinfo)):
 		if allinfo[nfo].getText().split(" ")[0] == "識別碼:":
 			code = allinfo[nfo].getText().split(" ")[1].strip()
@@ -98,9 +107,11 @@ def Database1(key,code,mypath): #搜尋JAVBUS
 		elif allinfo[nfo].getText() == "類別:":
 			genre = [g.getText().strip() for g in allinfo[nfo+1].find_all("span",{"class":"genre"}) ]
 		elif allinfo[nfo].getText() == "演員:":
-			actress = [g.getText().strip() for g in allinfo[nfo+1].find_all("span",{"class":"genre"}) ]
+			if nfo+1 < len(allinfo):
+				actress = [g.getText().strip() for g in allinfo[nfo+1].find_all("span",{"class":"genre"}) ]
 
 	Sort2Dir(key,code,mypath)
+	os.chdir(mypath)
 	mergename = code+"_preview.jpg"
 	mergepath = config.tempfolder+"\\"+code
 	if not os.path.isfile(dirpath+"\\"+mergename) and len(allpreview)>0:
@@ -142,6 +153,7 @@ def Database2(key,code,mypath): #搜尋JAV321
 			genre = nfo2.replace("标签:","").strip().split(" ")
 		elif "番号:" in nfo2:
 			code = nfo2.replace("番号:","").strip().upper()
+			code = key+code[code.find("-"):]
 		elif "发行日期:" in nfo2:
 			date = nfo2.replace("发行日期:","").strip()
 		elif "播放时长:" in nfo2:
@@ -150,6 +162,7 @@ def Database2(key,code,mypath): #搜尋JAV321
 			series = nfo2.replace("系列:","").strip()
  
 	Sort2Dir(key,code,mypath)
+	os.chdir(mypath)
 	mergename = code+"_preview.jpg"
 	mergepath = config.tempfolder+"\\"+code
 	if not os.path.isfile(dirpath+"\\"+mergename) and len(allpreview)>0:
@@ -161,7 +174,9 @@ def Database2(key,code,mypath): #搜尋JAV321
 
 #shutil.rmtree(config.tempfolder) #清除Cache
 
-'''#Test
-res = Database1("MDTM","MDTM-550",mypath)
+#Test
+'''res = Database1("ABP","ABP-800",mypath)
+print(res)'''
+'''
 db_name = "%s\\%s" % (config.LogPath,config.LogName) if config.LogPath else config.LogName
 sql.input(db_name, 'JAV', save,replace=True)'''

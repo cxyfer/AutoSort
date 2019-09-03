@@ -4,12 +4,9 @@
 import os ,re ,requests
 from opencc import OpenCC
 from fake_useragent import UserAgent
-import api as API
+import config
 
 ua = UserAgent()
-CHT_TW = True
-ENGlen = 65
-ZH_ENG =True
 regDicEN = {}
 
 with open("region.txt" , "r", encoding = 'utf-8-sig') as regdataEN: #地區縮寫對應
@@ -51,7 +48,7 @@ def imdb2db(IMDbID):
 def IMDbInfo(IMDbID):
     rapidapi_imdb = "https://movie-database-imdb-alternative.p.rapidapi.com/?i=%s&r=json" % (IMDbID)
     payload = {"X-RapidAPI-Host": "movie-database-imdb-alternative.p.rapidapi.com",
-                "X-RapidAPI-Key": API.Rapid_IMDb}
+                "X-RapidAPI-Key": config.Rapid_IMDb}
     try:
         res = requests.get(rapidapi_imdb,headers=payload).json()
         return res
@@ -61,7 +58,7 @@ def IMDbInfo(IMDbID):
 def IMDb2TMDb(IMDbID):
     global year,subtype,reg1,reg2,reg3,save
     IMDbRating = IMDbInfo(IMDbID)
-    imdb2tmdb = "https://api.themoviedb.org/3/find/%s?api_key=%s&language=zh-TW&external_source=imdb_id" % (IMDbID ,API.TMDbAPI)
+    imdb2tmdb = "https://api.themoviedb.org/3/find/%s?api_key=%s&language=zh-TW&external_source=imdb_id" % (IMDbID ,config.TMDbAPI)
     res = resjson(imdb2tmdb)
     if not "status_message" in res.keys() :
         if len(res["movie_results"]) != 0:
@@ -92,11 +89,11 @@ def IMDb2TMDb(IMDbID):
             AllTitle2 = list(set(AllTitle1))
             AllTitle2.sort(key=AllTitle1.index)
 
-            if CHT_TW: #繁體、台灣譯名
+            if config.CHT_TW: #繁體、台灣譯名
                 titleZH = OpenCC('s2twp').convert(titleZH)
                 genres = OpenCC('s2twp').convert(genres)
                 reg1 = OpenCC('s2twp').convert(reg1)
-            if ZH_ENG: #中英標題
+            if config.ZH_ENG: #中英標題
                 titleEN = ""
                 for tt in AllTitle2:
                     if not checkzh(tt):
@@ -104,19 +101,19 @@ def IMDb2TMDb(IMDbID):
                             AllTitle2.remove(tt)
                         titleEN = tt.replace(" : ","：").replace(": ","：")
                         break
-            title = (titleZH+" "+ titleEN) if  titleIMDb and len(titleEN) <= ENGlen and titleZH != titleEN  else titleZH
+            title = (titleZH+" "+ titleEN) if  titleIMDb and len(titleEN) <= config.ENGlen and titleZH != titleEN  else titleZH
             save = "%s\t%s\t%s\t%s\t\t%s\t%s\t%s\t%s\t%s\t%s" % (IMDbID,year,reg1,IMDbRating,titleZH,titleEN,"／".join(AllTitle2),genres,IMDbID,TMDbID)
             name = "[%s][%s]%s(%s)(%s)(%s)" % (year,reg2,title,genres.replace("|","_"),IMDbRating,IMDbID)
             return [subtype,year,reg1,name,save]
 
 def IMDbInt():
     global MVgenres,TVgenres
-    MVgenresAPI = "https://api.themoviedb.org/3/genre/movie/list?api_key=%s&language=zh_TW" % (API.TMDbAPI)
+    MVgenresAPI = "https://api.themoviedb.org/3/genre/movie/list?api_key=%s&language=zh_TW" % (config.TMDbAPI)
     genres = resjson(MVgenresAPI)['genres']
     MVgenres = {}
     for genre in genres:
         MVgenres[genre['id']] = genre['name']
-    TVgenresAPI = "https://api.themoviedb.org/3/genre/tv/list?api_key=%s&language=zh_TW" % (API.TMDbAPI)
+    TVgenresAPI = "https://api.themoviedb.org/3/genre/tv/list?api_key=%s&language=zh_TW" % (config.TMDbAPI)
     genres = resjson(TVgenresAPI)['genres']
     TVgenres = {}
     for genre in genres:

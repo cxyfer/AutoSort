@@ -1,5 +1,7 @@
 ﻿香港,港,HongKong
+中国香港,港,HongKong
 台湾,台,Taiwan
+中国台湾,台,Taiwan
 中国大陆,陸,China
 美国,美,USA
 英国,英,UK
@@ -24,6 +26,6 @@
 柬埔寨,柬,Cambodia
 匈牙利,匈,Hungary
 挪威,挪威,Norway
-冰岛,冰岛,Iceland
+冰岛,冰島,Iceland
 印度尼西亚,印尼,Indonesia
-比利时,比利时,Belgium
+比利时,比,Belgium

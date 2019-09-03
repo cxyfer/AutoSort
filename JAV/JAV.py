@@ -3,7 +3,7 @@
 #v4.1 20190807 資料庫輸出、
 #v4.2 未完成 相同檔案去重(檢查檔案大小)
 
-import os, requests, urllib, time
+import os, requests, urllib, time, re
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import config, search, sql
@@ -69,11 +69,10 @@ def GetCode(filename):
 
 #要處理的番號清單
 with open("keyword.txt" , "r", encoding = 'utf-8-sig') as keydata: 
-	KeyList = [l.strip() for l in keydata]
+	KeyList = [l.strip() for l in keydata if l[0]!="@"]
 KeyList = list(set(KeyList)) #番號去重
 if not os.path.isdir(config.tempfolder): #如果不是資料夾
 	os.mkdir(config.tempfolder)
-
 '''with open("keyword2.txt" , "r", encoding = 'utf-8-sig') as keydata: #找不到資料庫的特殊番號 (!待新增)
 	Key2List = [l.strip().split(",") for l in keydata ]
 Key2Dic = {}
@@ -91,11 +90,13 @@ for lsdir in sorted(os.listdir(mypath)):
 	for root, dirs, files in os.walk(mypath+"\\"+lsdir):
 		print("\nPath : "+root)
 		for i in files:
+			if "padding_file" in i: #跳過冗贅檔案
+				continue
+			if not re.match(r'.+\.(mkv|mp4|ts|wmv|avi)', i): #跳過非影像檔
+				continue
 			'''for key2 in Key2Dic.keys(): #對於無資料庫的番號進行處理 (!待新增)
 				key2 = key2'''
 			for key in KeyList:
-				if "padding_file" in i: #去除容易誤判的冗贅檔案名
-					continue
 				dirpath = mypath
 				code = GetCode(i) #從檔名找番號
 				if not code : #如果不能夠從檔案名稱找出番號
@@ -107,16 +108,23 @@ for lsdir in sorted(os.listdir(mypath)):
 					os.mkdir(mypath+"\\@~Sorted\\"+key)
 				result = search.Database2(key,code,mypath) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else search.Database1(key,code,mypath)
 				if not result['success']: #如果不存在對應的資料
+					print("*Error :",result['error'])
 					result = search.Database1(key,code,mypath) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else search.Database2(key,code,mypath) #調換
 					if not result['success']:
+						print("*Error :",result['error'])
 						continue
 				save = result['save']
+				
 				print("File : "+i)
 				i2=i #檔案移動處理
 				dirpath = result['dirpath']
 				if not os.path.isfile(dirpath+"\\"+i2): #若檔案不存在
-					os.rename(root+"\\"+i,dirpath+"\\"+i2)
-					print("Move : "+dirpath)
+					try:
+						os.rename(root+"\\"+i,dirpath+"\\"+i2)
+						print("Move : "+dirpath)
+					except FileNotFoundError:
+						print("*Error : FileNotFound "+file1)
+						continue
 				else: #若檔案存在
 					file1 = root+"\\"+i
 					file2 = dirpath+"\\"+i2
