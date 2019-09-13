@@ -38,10 +38,10 @@ pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bb
 
 ## 待加入功能
 
-[] 手動模式(全手動、錯誤時手動、不使用手動)，手動輸入IMDbID
+- [] 手動模式(全手動、錯誤時手動、不使用手動)，手動輸入IMDbID
 
-[] 搜尋模式切換
+- [] 搜尋模式切換
 
-[] 根據TMDB資料搜尋各季資訊(因IMDb不會返回各季資料)，並存放到 合集 資料夾
+- [] 根據TMDB資料搜尋各季資訊(因IMDb不會返回各季資料)，並存放到 合集 資料夾
 
-[x] 引用資料庫已有的資料
+- [x] 引用資料庫已有的資料
