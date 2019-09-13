@@ -3,6 +3,7 @@
 台湾,台,Taiwan
 中国台湾,台,Taiwan
 中国大陆,陸,China
+中国,陸,China
 美国,美,USA
 英国,英,UK
 日本,日,Japan
@@ -16,6 +17,7 @@
 俄罗斯,俄,Russia
 伊朗,伊朗,Iran
 加拿大,加,Canada
+加拿大 Canada,加,Canada
 澳大利亚,澳,Australia
 爱尔兰,愛,Ireland
 瑞典,瑞典,Sweden

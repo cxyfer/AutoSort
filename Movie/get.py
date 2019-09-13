@@ -55,18 +55,19 @@ def IMDbInfo(IMDbID):
     except Exception as e:
         return False
 
-def IMDb2TMDb(IMDbID):
+def IMDb2TMDb(IMDbID,lan="zh-TW"):
     global year,subtype,reg1,reg2,reg3,save
     IMDbRating = IMDbInfo(IMDbID)
-    imdb2tmdb = "https://api.themoviedb.org/3/find/%s?api_key=%s&language=zh-TW&external_source=imdb_id" % (IMDbID ,config.TMDbAPI)
+    imdb2tmdb = "https://api.themoviedb.org/3/find/%s?api_key=%s&language=%s&external_source=imdb_id" % (IMDbID ,config.TMDbAPI,lan)
     res = resjson(imdb2tmdb)
     if not "status_message" in res.keys() :
         if len(res["movie_results"]) != 0:
             IMDb =IMDbInfo(IMDbID)
             results = res['movie_results'][0] 
-
             titleZH = results['title']
             titleEN = results['original_title']
+            if titleZH == titleEN:
+                return IMDb2TMDb(IMDbID,lan="zh-CN")
             genre_ids = results['genre_ids']
             genres = "|".join([MVgenres[genre_id] for genre_id in genre_ids])
             TMDbID = "TMDbMV_%s" % (results['id'])

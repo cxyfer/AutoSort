@@ -227,7 +227,6 @@ for folder in folderList:
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			elif re.search(r"CMCT",d) and search.SSD(d): #如果能從SSD找到IMDbID或dblink
 				ptsearch = search.SSD(d)
-				print(ptsearch)
 				LogNPrint("Search : from SSD")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
