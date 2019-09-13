@@ -202,7 +202,7 @@ for folder in folderList:
 		for d in sorted(os.listdir(folder)):
 			subtype,IMDbID,dblink= "","",""
 			folderpath = "%s/%s" % (folder,d)
-			SubD = False if re.match(r'.+?\.mkv|mp4|ts', d) else config.SubFolder #若資料夾為檔案名稱，則不使用config.SubFolder
+			SubD = False if re.match(r'.+?\.(mkv|mp4|ts)', d) else config.SubFolder #若資料夾為檔案名稱，則不使用config.SubFolder
 			LogNPrint("\nFolder : "+d)
 			if re.search(r"\(db_(.+?)\)",d): #如果能從資料夾名稱找到dbID
 				SubD = False
@@ -221,26 +221,31 @@ for folder in folderList:
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
 			elif re.search(r"(Aka|Ao|FLTTH|iLoveHD|iLoveTV|MGs|OurPad|OurTV|PbK)",d) and search.ourbits(d): #如果能從Ourbits找到IMDbID或dblink
-				obsearch = search.ourbits(d)
+				ptsearch = search.ourbits(d)
 				LogNPrint("Search : from Ourbits")
-				if obsearch['douban']:
-					dblink = obsearch['douban']
-				elif obsearch['imdb']:
-					dblink = Get.imdb2db(obsearch['imdb'])
+				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			elif re.search(r"CMCT",d) and search.SSD(d): #如果能從SSD找到IMDbID或dblink
-				obsearch = search.SSD(d)
+				ptsearch = search.SSD(d)
+				print(ptsearch)
 				LogNPrint("Search : from SSD")
-				if obsearch['douban']:
-					dblink = obsearch['douban']
-				elif obsearch['imdb']:
-					dblink = Get.imdb2db(obsearch['imdb'])
+				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			elif re.search(r"TJUPT",d) and search.TJUPT(d): #如果能從TJUPT找到IMDbID或dblink
-				obsearch = search.TJUPT(d)
+				ptsearch = search.TJUPT(d)
 				LogNPrint("Search : from TJUPT")
-				if obsearch['douban']:
-					dblink = obsearch['douban']
-				elif obsearch['imdb']:
-					dblink = Get.imdb2db(obsearch['imdb'])
+				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+			elif re.search(r"FRDS",d) and search.FRDS(d): #如果能從FRDS找到IMDbID或dblink
+				ptsearch = search.FRDS(d)
+				LogNPrint("Search : from FRDS")
+				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+			elif re.search(r"PuTao",d) and search.PuTao(d): #如果能從PuTao找到IMDbID或dblink
+				ptsearch = search.PuTao(d)
+				LogNPrint("Search : from PuTao")
+				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			else:
 				dblink = Search.DB(d)
 			if dblink: #如果能返回豆瓣鏈接

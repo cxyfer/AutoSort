@@ -1,4 +1,4 @@
-import requests,re
+import requests,re,time
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import config
@@ -25,7 +25,8 @@ def ourbits(keyword,cookies=config.ourbits):
 			imdb = soup.find("div",{"class":"imdbnew"})
 			dblink = "https://movie.douban.com/subject/%s/" % (db.get("data-doubanid")) if db else ""
 			imdbid = re.search(r"(http|https)://www.imdb.com/title/(tt\d+)",imdb.find("a").get("href")).group(2) if imdb else ""
-			return {'douban':dblink,'imdb':imdbid}
+			if dblink or imdbid:
+				return {'douban':dblink,'imdb':imdbid}	
 	return False
 def SSD(keyword,cookies=config.SSD):
 	if not config.SSD:
@@ -47,12 +48,14 @@ def SSD(keyword,cookies=config.SSD):
 			db_search = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",res.text)
 			dblink = db_search.group() if db_search else ""
 			imdbid = imdb_search.group(2) if imdb_search else ""
-			return {'douban':dblink,'imdb':imdbid}
+			if dblink or imdbid:
+				return {'douban':dblink,'imdb':imdbid}	
 	return False
 def TJUPT(keyword,cookies=config.TJUPT):
 	if not config.TJUPT:
 		return False
-	url="https://www.tjupt.org/torrents.php?search="+keyword
+	key2 = keyword if not re.match(r'(.+?)\.(mkv|mp4|ts)', keyword) else re.match(r'(.+?)\.(mkv|mp4|ts)', keyword).group(1)
+	url="https://www.tjupt.org/torrents.php?search="+key2
 	response=requests.get(url,headers={'User-Agent':UA},cookies=cookies)
 	response.encoding = 'UTF-8'
 	soup = BeautifulSoup(response.text, 'lxml')
@@ -68,5 +71,76 @@ def TJUPT(keyword,cookies=config.TJUPT):
 			db_search = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",res.text)
 			dblink = db_search.group() if db_search else ""
 			imdbid = imdb_search.group(2) if imdb_search else ""
-			return {'douban':dblink,'imdb':imdbid}
+			if dblink or imdbid:
+				return {'douban':dblink,'imdb':imdbid}	
+	return False
+def FRDS(keyword,cookies=config.FRDS):
+	if not config.FRDS:
+		return False
+	url="https://pt.keepfrds.com/torrents.php?search="+keyword
+	response=requests.get(url,headers={'User-Agent':UA},cookies=cookies)
+	response.encoding = 'UTF-8'
+	soup = BeautifulSoup(response.text, 'lxml')
+	results = soup.find_all("table",{"class":"torrentname"})
+	reslinks = ["https://pt.keepfrds.com/"+result.find("a").get("href") for result in results] #取得搜尋結果鏈接
+	for reslink in reslinks:
+		res=requests.get(reslink,headers={'User-Agent':UA},cookies=cookies)
+		res.encoding = 'UTF-8'
+		soup = BeautifulSoup(res.text, 'lxml')
+		title = soup.find("a",{"class":"index"}).getText().replace(".torrent","").replace("[FRDS].","")
+		if title == keyword:
+			imdb_search = re.search(r"(http|https)://www.imdb.com/title/(tt\d+)",res.text)
+			db_search = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",res.text)
+			dblink = db_search.group() if db_search else ""
+			imdbid = imdb_search.group(2) if imdb_search else ""
+			if dblink or imdbid:
+				return {'douban':dblink,'imdb':imdbid}	
+	return False
+def MTeam(keyword,cookies=config.MTeam): #未知錯誤，疑似cookies無法使用
+	if not config.MTeam:
+		return False
+	url="https://pt.m-team.cc/torrents.php?search="+keyword
+	response=requests.get(url,headers={'User-Agent':UA},cookies=cookies)
+	response.encoding = 'UTF-8'
+	soup = BeautifulSoup(response.text, 'lxml')
+	results = soup.find_all("table",{"class":"torrentname"})
+	reslinks = ["https://pt.m-team.cc/"+result.find("a").get("href") for result in results] #取得搜尋結果鏈接
+	for reslink in reslinks:
+		res=requests.get(reslink,headers={'User-Agent':UA},cookies=cookies)
+		res.encoding = 'UTF-8'
+		soup = BeautifulSoup(res.text, 'lxml')
+		title = soup.find("a",{"class":"index"}).getText().replace(".torrent","").replace("[M-TEAM].","")
+		if title == keyword:
+			imdb_search = re.search(r"(http|https)://www.imdb.com/title/(tt\d+)",res.text)
+			db_search = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",res.text)
+			dblink = db_search.group() if db_search else ""
+			imdbid = imdb_search.group(2) if imdb_search else ""
+			if dblink or imdbid:
+				return {'douban':dblink,'imdb':imdbid}	
+	return False
+def PuTao(keyword,cookies=config.PuTao): #未知錯誤，疑似cookies無法使用
+	if not config.PuTao:
+		return False
+	url="https://pt.sjtu.edu.cn/torrents.php?search="+keyword
+	response=requests.get(url,headers={'User-Agent':UA},cookies=cookies)
+	response.encoding = 'UTF-8'
+	soup = BeautifulSoup(response.text, 'lxml')
+	results = soup.find_all("table",{"class":"torrentname"})
+	reslinks = ["https://pt.sjtu.edu.cn/"+result.find("a").get("href") for result in results] #取得搜尋結果鏈接
+	for reslink in reslinks:
+		res=requests.get(reslink,headers={'User-Agent':UA},cookies=cookies)
+		while "Rate Limit Exceeded" in res.text:#葡萄訪問限制
+			print("*Sleep : 5 seconds")
+			time.sleep(5)
+			res=requests.get(reslink,headers={'User-Agent':UA},cookies=cookies)
+		res.encoding = 'UTF-8'
+		soup = BeautifulSoup(res.text, 'lxml')
+		title = soup.find("a",{"class":"index"}).getText().replace(".torrent","").replace("[PT].","")
+		if title == keyword:
+			imdb_search = re.search(r"(http|https)://www.imdb.com/title/(tt\d+)",res.text)
+			db_search = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",res.text)
+			dblink = db_search.group() if db_search else ""
+			imdbid = imdb_search.group(2) if imdb_search else ""
+			if dblink or imdbid:
+				return {'douban':dblink,'imdb':imdbid}	
 	return False
