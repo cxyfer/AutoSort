@@ -14,13 +14,15 @@ pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bb
 
 - 若資料夾內存在.nfo檔，則在其中尋找IMDbID，並以此做搜尋
 
+- 若可在PT站搜尋到IMDbID或DoubanID，則使用此資料。
+
 - 若以上皆非，則解析文件夾名稱調用豆瓣API做搜尋
 
   - 通常文件夾名稱由3個部分組成 $電影名稱.$年份.$壓制參數，目前採用以$年份為錨點解析出$電影名稱的方式 
   
 ### 資料採集
 
-- 原採用PT-Gen的API，但受其穩定性&API調用次數限制，故後來棄用。 (若要啟用將Local=False即可)
+- 原採用PT-Gen的API，但受其穩定性&API調用次數限制，故後來棄用。
 
 - 改採參照其代碼簡化成gen.py，以此採集資料。感謝@Rhilip大佬、BFDZ大佬的PT-Gen。
 
@@ -42,4 +44,4 @@ pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bb
 
 - [] 根據TMDB資料搜尋各季資訊(因IMDb不會返回各季資料)，並存放到 合集 資料夾
 
-- [] 引用資料庫已有的資料
+- [x] 引用資料庫已有的資料
