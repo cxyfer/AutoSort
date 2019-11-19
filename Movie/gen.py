@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2017-2020 Rhilip <rhilipruan@gmail.com>
 
-import re
+import re,time
 import json
 import random
 import requests
@@ -16,10 +16,9 @@ douban_apikey_list = [
     "02646d3fb69a52ff072d47bf23cef8fd",
     "0b2bdeda43b5688921839c8ecb20399b",
     "0dad551ec0f84ed02907ff5c42e8ec70",
-    "0df993c66c0c636e29ecbb5344252a4a",
-    "07c78782db00a121175696889101e363"
+    "0df993c66c0c636e29ecbb5344252a4a"
 ]
-
+    #"07c78782db00a121175696889101e363"
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                   'Chrome/61.0.3163.100 Safari/537.36 ',
@@ -34,10 +33,15 @@ def get_db_apikey() -> str:
 def get_page(url: str, json_=False, jsonp_=False, bs_=False, text_=False, **kwargs):
     kwargs.setdefault("headers", headers)
     page = requests.get(url, **kwargs)
+
     page.encoding = "utf-8"
     page_text = page.text
     if json_:
-        return page.json()
+        try:
+            return page.json()
+        except:
+            time.sleep(0.5)
+            return get_page(url,json_=True)
     elif jsonp_:
         start_idx = page_text.find('(')
         end_idx = page_text.rfind(')')

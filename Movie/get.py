@@ -61,23 +61,23 @@ def IMDb2TMDb(IMDbID,lan="zh-TW"):
     imdb2tmdb = "https://api.themoviedb.org/3/find/%s?api_key=%s&language=%s&external_source=imdb_id" % (IMDbID ,config.TMDbAPI,lan)
     res = resjson(imdb2tmdb)
     if not "status_message" in res.keys() :
-        if len(res["movie_results"]) != 0:
+        if len(res["movie_results"]) != 0 or len(res["tv_results"]) != 0: #Movie+TVS
             IMDb =IMDbInfo(IMDbID)
-            results = res['movie_results'][0] 
-            titleZH = results['title']
-            titleEN = results['original_title']
-            if titleZH == titleEN:
-                return IMDb2TMDb(IMDbID,lan="zh-CN")
+            year = IMDb['Year']
+            titleIMDb = IMDb['Title']
+            IMDbRating = IMDb['imdbRating'] if IMDb['imdbRating'] != "N/A" else "0"
+            region = IMDb['Country'].replace(" ","").split(",")[0]
+            subtype = IMDb['Type'] if IMDb['Type'] == "movie" else "tv"
+
+            results = res['movie_results'][0] if subtype == "movie" else res['tv_results'][0]
+            titleZH = results['title'] if subtype == "movie" else results['name'] #Movie為title、TVS為name
+            titleEN = results['original_title'] if subtype == "movie" else results['original_name']
+            if titleZH == titleEN and lan != "zh-CN":
+                return IMDb2TMDb(IMDbID,lan="zh-CN") #若TW譯名不存在，返回CN譯名
             genre_ids = results['genre_ids']
             genres = "|".join([MVgenres[genre_id] for genre_id in genre_ids])
             TMDbID = "TMDbMV_%s" % (results['id'])
             TMDbRating = results['vote_average']
-
-            year = IMDb['Year']
-            titleIMDb = IMDb['Title']
-            IMDbRating = IMDb['imdbRating']
-            region = IMDb['Country'].replace(" ","").split(",")[0]
-            subtype = IMDb['Type']
 
             for reg in regDicEN.keys(): #地區
                 if reg == region:
@@ -121,3 +121,4 @@ def IMDbInt():
         TVgenres[genre['id']] = genre['name']
 
 IMDbInt()
+print()

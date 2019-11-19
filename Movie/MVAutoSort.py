@@ -3,7 +3,6 @@
 # Copyright (c) 2019-2020 GDST <gdst.tw@gmail.com>
 
 import json , requests ,random ,os,re,time
-from lxml import etree
 from opencc import OpenCC
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
@@ -73,11 +72,10 @@ class Search:
 				break
 			else:
 				key2 = key1[:key1.find(dig4)] if key1[:key1.find(dig4)] != "" else key1
-		print("Change :",key2)
 		Bracket = re.search(r"\[(.+?)\]",key2) #搜尋中括弧
 		if Bracket:
 			key2 = Bracket.group(1)
-			print("Change :",key2)
+		LogNPrint("Change : "+key2)
 		url = config.dbapi+key2
 		res = resjson(url)
 		if int(res['total']) == 1 and len(res['subjects'])==1: #Only 1 Result
@@ -109,12 +107,11 @@ class Search:
 				subtype = "tv" if res['episodes'] else "movie"
 			year = year2 = res['year']
 			if not year:
-				print(res['playdate'])
-				year = res['playdate'][0][:4]
+				year = res['playdate'][0][:4] if res['playdate'] else 0
 			'''if int(len(res['seasons_list'])) > 1 and subtype == "tv": #多季的電視劇
 				year = 999 #多季
 				year2 = "多季"'''
-			titleZH = res['chinese_title'] #中文標題
+			titleZH = res['chinese_title'].replace("  "," ") #中文標題
 			this_title = res['this_title'][0] #原始標題
 			trans_title = res['trans_title'] #List 用來取台灣譯名
 			aka = res['aka']
@@ -135,6 +132,7 @@ class Search:
 
 			genre = "|".join(res['genre']) #List→str 類型
 			region = res['region'] if type(res['region']) == type("str") else res['region'][0]
+			region = region.split(" ")[0] #解決中英混合的地區
 			reg1,reg2,reg3 = region,region,region
 			for reg in regDic.keys(): #地區
 				if reg == region:
@@ -225,6 +223,11 @@ for folder in folderList:
 				LogNPrint("Search : from Ourbits")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+			elif re.search(r"WiKi|DoA|NGB|ARiN",d) and search.TTG(d): #如果能從TTG找到IMDbID或dblink
+				ptsearch = search.TTG(d)
+				LogNPrint("Search : from TTG")
+				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			elif re.search(r"CMCT",d) and search.SSD(d): #如果能從SSD找到IMDbID或dblink
 				ptsearch = search.SSD(d)
 				LogNPrint("Search : from SSD")
@@ -235,7 +238,7 @@ for folder in folderList:
 				LogNPrint("Search : from TJUPT")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"FRDS",d) and search.FRDS(d): #如果能從FRDS找到IMDbID或dblink
+			elif re.search(r"FRDS|Yumi",d) and search.FRDS(d): #如果能從FRDS找到IMDbID或dblink
 				ptsearch = search.FRDS(d)
 				LogNPrint("Search : from FRDS")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
@@ -251,6 +254,7 @@ for folder in folderList:
 				LogNPrint("dbLink : "+dblink)
 				name = Search.GetInfo(dblink)
 				if not name and IMDbID: #如果無法從dblink找到資料，但存在IMDbID
+					LogNPrint("Change : IMDb&TMDb") # 待辦：研究TMDB回傳錯誤訊息
 					GetTMDb = Get.IMDb2TMDb(IMDbID)
 					if GetTMDb:
 						subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
@@ -259,6 +263,7 @@ for folder in folderList:
 						subtype,year,reg1,name,save = "","","","",""
 			elif not dblink and IMDbID: #如果無法返回dbLink，但有IMDbID→改用TMDB跟IMDb搜尋資訊
 				GetTMDb = Get.IMDb2TMDb(IMDbID)
+
 				if GetTMDb:
 					subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
 					LogNPrint("Change : IMDb&TMDb")
