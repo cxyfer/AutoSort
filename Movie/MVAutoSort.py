@@ -66,7 +66,7 @@ class Search:
 			return re.search(r"(19|20\d{2})",key1).group(1)
 		else:
 			return False
-	def DB(key1,mod=1):
+	def DB(key1,mod=1,year_check=True):
 		global subtype , dblink
 		key2 = key1 
 		year0 = Search.get_year(key1)
@@ -94,6 +94,8 @@ class Search:
 		elif int(res['total']) == 0 or len(res['subjects'])==0: #找不到結果trf
 			return ""
 		elif int(res['total']) > 1 : #過多結果
+			if not year_check: #如果不檢查年份，直接返回第一個搜尋結果
+				return res['subjects'][0]['alt']
 			for subject in res['subjects']: #例外處理-過多資料-年份比對
 				if subject['year'] in key1:
 				#if subject['year'] in key1 or (not year0 and subject['title'] in key1):
@@ -254,9 +256,9 @@ for folder in folderList:
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			else:
-				dblink = Search.DB(d)
+				dblink = Search.DB(d,year_check=config.year_check)
 				if not dblink:
-					dblink = Search.DB(d,mod=2)
+					dblink = Search.DB(d,mod=2,year_check=config.year_check)
 			if dblink: #如果能返回豆瓣鏈接
 				LogNPrint("dbLink : "+dblink)
 				name = Search.GetInfo(dblink)
