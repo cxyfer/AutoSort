@@ -61,17 +61,22 @@ def LogNPrint(text):
 		data.write(str(text)+"\n")
 
 class Search:
-	def DB(key1):
+	def get_year(key1): #搜尋年份
+		if re.search(r"(19|20\d{2})",key1):
+			return re.search(r"(19|20\d{2})",key1).group(1)
+		else:
+			return False
+	def DB(key1,mod=1):
 		global subtype , dblink
-		key2,year0 = key1,""
-		digit4 = re.findall(r"\d{4}",key2)
-		for dig4 in digit4: #去除冗贅資料，以便查詢
-			if dig4 != "1080" and dig4 != "2160":
-				year0 = dig4
-				key2 = key1[:key1.find(dig4)] if key1[:key1.find(dig4)] != "" else key1 
-				break
+		key2 = key1 
+		year0 = Search.get_year(key1)
+		if mod == 1 : #搜尋年份或畫質之前的名稱
+			if year0 :
+				key2 = key1[:key1.find(year0)] if key1[:key1.find(year0)] != "" else key1
 			else:
-				key2 = key1[:key1.find(dig4)] if key1[:key1.find(dig4)] != "" else key1
+				key2 = re.search(r"(.+)\d{4}",key1).group(1) if re.search(r"(.+)\d{4}",key1) else key1
+		if mod == 2 : #搜尋第一個.之前的名稱
+			key2 = re.search(r"([^\.]+)\.",key1).group(1) if re.search(r"([^\.]+)\.",key1) else key1
 		Bracket = re.search(r"\[(.+?)\]",key2) #搜尋中括弧
 		if Bracket:
 			key2 = Bracket.group(1)
@@ -82,7 +87,7 @@ class Search:
 			subtype = res['subjects'][0]['subtype']
 			dblink = res['subjects'][0]['alt']
 			year = res['subjects'][0]['year']
-			if year in key1 or not year0:
+			if year in key1 or not year0: #當名稱包含搜尋到年份 或 名稱內不含年份
 				return dblink
 			else:
 				print("*Error : Year doesn't match.")
@@ -173,13 +178,13 @@ class Search:
 					if not Get.checkzh(tt):
 						if tt in AllTitle2:
 							AllTitle2.remove(tt)
-						titleEN = tt.replace(" : ","：").replace(": ","：")
+						titleEN = tt.replace(" : ","：").replace(": ","：").replace("/","／").replace("\\","＼")
 						break
 				for tt in [titleZH]+aka:
 					if Get.checkzh(tt):
 						if tt in AllTitle2:
 							AllTitle2.remove(tt)
-						titleZH = tt.replace(" : ","：").replace(": ","：")
+						titleZH = tt.replace(" : ","：").replace(": ","：").replace("/","／").replace("\\","＼")
 						break
 				title = (titleZH+" "+titleEN) if titleEN and len(titleEN) <= config.ENGlen and titleZH != titleEN else titleZH
 			titleOT = AllTitle2
@@ -250,11 +255,13 @@ for folder in folderList:
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			else:
 				dblink = Search.DB(d)
+				if not dblink:
+					dblink = Search.DB(d,mod=2)
 			if dblink: #如果能返回豆瓣鏈接
 				LogNPrint("dbLink : "+dblink)
 				name = Search.GetInfo(dblink)
 				if not name and IMDbID: #如果無法從dblink找到資料，但存在IMDbID
-					LogNPrint("Change : IMDb&TMDb") # 待辦：研究TMDB回傳錯誤訊息
+					#LogNPrint("Change : IMDb&TMDb") # 待辦：研究TMDB回傳錯誤訊息
 					GetTMDb = Get.IMDb2TMDb(IMDbID)
 					if GetTMDb:
 						subtype,year,reg1,name,save = GetTMDb[0],GetTMDb[1],GetTMDb[2],GetTMDb[3],GetTMDb[4]
@@ -280,15 +287,15 @@ for folder in folderList:
 			else:
 				continue
 			if config.YearSort:
-				if int(year) > 2000:
-					year = year
+				if int(year[:4]) > 2000:
+					year = year[:4]
 				#elif int(year) == 999:
 				#	year = "多季"
-				elif 1991<=int(year) and int(year)<=2000:
+				elif 1991<=int(year[:4]) and int(year[:4])<=2000:
 					year = "1991-2000"
-				elif 1981<=int(year) and int(year)<=1990:
+				elif 1981<=int(year[:4]) and int(year[:4])<=1990:
 					year = "1981-1990"
-				elif int(year)<=1980:
+				elif int(year[:4])<=1980:
 					year = "1980以前"
 			if subtype == "movie":
 				table_name = "Movie"
