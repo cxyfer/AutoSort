@@ -98,7 +98,7 @@ class Search:
 			if not year_check: #如果不檢查年份，直接返回第一個搜尋結果
 				return res['subjects'][0]['alt']
 			for subject in res['subjects']: #例外處理-過多資料-年份比對
-				if subject['year'] in key1:
+				if subject['year'] != "" and subject['year'] in key1: #去除年份空白的情況
 				#if subject['year'] in key1 or (not year0 and subject['title'] in key1):
 					subtype = subject['subtype']
 					dblink = subject['alt']
