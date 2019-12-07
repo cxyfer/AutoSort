@@ -75,8 +75,9 @@ class Search:
 				key2 = key1[:key1.find(year0)] if key1[:key1.find(year0)] != "" else key1
 			else:
 				key2 = re.search(r"(.+)\d{4}",key1).group(1) if re.search(r"(.+)\d{4}",key1) else key1
-		if mod == 2 : #搜尋第一個.之前的名稱
-			key2 = re.search(r"([^\.]+)\.",key1).group(1) if re.search(r"([^\.]+)\.",key1) else key1
+		if mod == 2 : #搜尋第一個.之前的中文名稱 或 包含季數(SXX)的英文名稱
+			key2 = re.search(r"([\u4e00-\u9fa5]+)\.",key1).group(1) if re.search(r"([\u4e00-\u9fa5]+)\.",key1) else key1
+			key2 = re.search(r"(.+\.S\d{2})",key1).group(1) if key2 == key1 and re.search(r"(.+\.S\d{2})",key1) else key1
 		Bracket = re.search(r"\[(.+?)\]",key2) #搜尋中括弧
 		if Bracket:
 			key2 = Bracket.group(1)
@@ -225,7 +226,7 @@ for folder in folderList:
 					dblink = Get.imdb2db(get_nfo['imdb'])
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
-			elif re.search(r"(Aka|Ao|FLTTH|iLoveHD|iLoveTV|MGs|OurPad|OurTV|PbK)",d) and search.ourbits(d): #如果能從Ourbits找到IMDbID或dblink
+			elif re.search(r"(Ao|FLTTH|iLoveHD|iLoveTV|MGs|OurPad|OurTV|PbK)",d) and search.ourbits(d): #如果能從Ourbits找到IMDbID或dblink
 				ptsearch = search.ourbits(d)
 				LogNPrint("Search : from Ourbits")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
@@ -240,7 +241,7 @@ for folder in folderList:
 				LogNPrint("Search : from SSD")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
 				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"TJUPT",d) and search.TJUPT(d): #如果能從TJUPT找到IMDbID或dblink
+			elif re.search(r"Aka|TJUPT",d) and search.TJUPT(d): #如果能從TJUPT找到IMDbID或dblink
 				ptsearch = search.TJUPT(d)
 				LogNPrint("Search : from TJUPT")
 				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
