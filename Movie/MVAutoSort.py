@@ -208,7 +208,7 @@ for folder in folderList:
 		for d in sorted(os.listdir(folder)):
 			subtype,IMDbID,dblink= "","",""
 			folderpath = "%s/%s" % (folder,d)
-			SubD = False if re.match(r'.+?\.(mkv|mp4|ts)', d) else config.SubFolder #若資料夾為檔案名稱，則不使用config.SubFolder
+			SubD = False if re.match(r'.+?\.(mkv|mp4|ts).?', d) else config.SubFolder #若資料夾為檔案名稱，則不使用config.SubFolder
 			LogNPrint("\nFolder : "+d)
 			if re.search(r"\(db_(.+?)\)",d): #如果能從資料夾名稱找到dbID
 				SubD = False
@@ -226,37 +226,53 @@ for folder in folderList:
 					dblink = Get.imdb2db(get_nfo['imdb'])
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
-			elif re.search(r"(Ao|FLTTH|iLoveHD|iLoveTV|MGs|OurPad|OurTV|PbK)",d) and search.ourbits(d): #如果能從Ourbits找到IMDbID或dblink
-				ptsearch = search.ourbits(d)
-				LogNPrint("Search : from Ourbits")
-				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"WiKi|DoA|NGB|ARiN",d) and search.TTG(d): #如果能從TTG找到IMDbID或dblink
-				ptsearch = search.TTG(d)
-				LogNPrint("Search : from TTG")
-				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"CMCT",d) and search.SSD(d): #如果能從SSD找到IMDbID或dblink
-				ptsearch = search.SSD(d)
-				LogNPrint("Search : from SSD")
-				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"Aka|TJUPT",d) and search.TJUPT(d): #如果能從TJUPT找到IMDbID或dblink
-				ptsearch = search.TJUPT(d)
-				LogNPrint("Search : from TJUPT")
-				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"FRDS|Yumi",d) and search.FRDS(d): #如果能從FRDS找到IMDbID或dblink
-				ptsearch = search.FRDS(d)
-				LogNPrint("Search : from FRDS")
-				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
-			elif re.search(r"PuTao",d) and search.PuTao(d): #如果能從PuTao找到IMDbID或dblink
-				ptsearch = search.PuTao(d)
-				LogNPrint("Search : from PuTao")
-				IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-				dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
 			else:
+				if re.search(r"(Ao|FLTTH|iLoveHD|iLoveTV|MGs|OurPad|OurTV|PbK|NTb|NTG|VCB-Studio)",d) and search.ourbits(d) and not (IMDbID or dblink): #如果能從Ourbits找到IMDbID或dblink
+					ptsearch = search.ourbits(d)
+					LogNPrint("Search : from Ourbits")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"WiKi|DoA|NGB|ARiN|NTb|NTG|ExREN",d) and search.TTG(d) and not (IMDbID or dblink): #如果能從TTG找到IMDbID或dblink
+					ptsearch = search.TTG(d)
+					LogNPrint("Search : from TTG")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"CMCT",d) and search.SSD(d) and not (IMDbID or dblink): #如果能從SSD找到IMDbID或dblink
+					ptsearch = search.SSD(d)
+					LogNPrint("Search : from SSD")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"AOA|TJUPT|VCB-Studio",d) and search.TJUPT(d) and not (IMDbID or dblink): #如果能從TJUPT找到IMDbID或dblink
+					ptsearch = search.TJUPT(d)
+					LogNPrint("Search : from TJUPT")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"FRDS|Yumi",d) and search.FRDS(d) and not (IMDbID or dblink): #如果能從FRDS找到IMDbID或dblink
+					ptsearch = search.FRDS(d)
+					LogNPrint("Search : from FRDS")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"PuTao",d) and search.PuTao(d) and not (IMDbID or dblink): #如果能從PuTao找到IMDbID或dblink
+					ptsearch = search.PuTao(d)
+					LogNPrint("Search : from PuTao")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"PTer|ExREN|AREY",d) and search.PTer(d) and not (IMDbID or dblink): #如果能從PuTao找到IMDbID或dblink
+					ptsearch = search.PTer(d)
+					LogNPrint("Search : from PTer")
+					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+				if re.search(r"OneHD|StBOX",d) and search.MTeam(d) and not (IMDbID or dblink): #如果能從MTeam找到IMDbID或dblink
+					ptsearch = search.MTeam(d)
+					if 'title' in ptsearch.keys():
+						dblink = Search.DB(ptsearch['title'],year_check=config.year_check)
+						if not dblink:
+							dblink = Search.DB(ptsearch['title'],year_check=False)
+					else:
+						LogNPrint("Search : from MTeam")
+						IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
+						dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db(IMDbID)
+			if not (dblink or IMDbID):
 				dblink = Search.DB(d,year_check=config.year_check)
 				if not dblink:
 					dblink = Search.DB(d,mod=2,year_check=config.year_check)
@@ -309,22 +325,18 @@ for folder in folderList:
 
 			query = sql.query(db_name, table_name,save.split("\t")[0]) #查詢舊有資料
 			if query != None and not config.DataUpdate: #若存在舊有資料且不須更新現有資料
+				LogNPrint("Exist  : "+query[0])
 				Path = query[-1]
 				name = Path[Path.rfind("\\")+1:]
 			elif query != None and config.DataUpdate: #若存在舊有資料且與新的資料不相符(數據更新)且更新資料參數為True
 				sql.input(db_name, table_name, save.split("\t")+[Path],replace=True)
 				command2 = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(mypath+"\\"+query[-1],mypath+"\\"+Path,Logfile))
 				os.system(command2)
+				LogNPrint("Replace : "+query[0])
 			else: #資料庫內無對應資料
 				sql.input(db_name, table_name, save.split("\t")+[Path])
 
 			LogNPrint("Rename : "+name)
 			path1 = mypath+"\\"+folder+"\\"+d
-			path2 = mypath+"\\"+Path+"\\"+d if SubD or subtype == "tv" else mypath+"\\"+Path
-			if len(path2) > config.pathlen and not subtype == "tv" : #路徑長度(但對TV類型不啟用)
-				path2 = mypath+"\\"+Path
-			command = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(path1,path2,Logfile))
-			os.system(command)
-			LogNPrint("MoveTo : "+path2)
-		command = ("rclone rmdirs -v \"%s\"" % (mypath+"\\"+folder))
-		os.system(command)
+			path2 = mypath+"\\"+Path+"\\"+d if SubD else mypath+"\\"+Path
+			if len(path2) > config

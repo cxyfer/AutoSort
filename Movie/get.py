@@ -59,11 +59,14 @@ def IMDb2TMDb(IMDbID,lan="zh-TW"):
     global year,subtype,reg1,reg2,reg3,save
     IMDbRating = IMDbInfo(IMDbID)
     imdb2tmdb = "https://api.themoviedb.org/3/find/%s?api_key=%s&language=%s&external_source=imdb_id" % (IMDbID ,config.TMDbAPI,lan)
+
     res = resjson(imdb2tmdb)
     if not "status_message" in res.keys() :
         if len(res["movie_results"]) != 0 or len(res["tv_results"]) != 0: #Movie+TVS
             IMDb =IMDbInfo(IMDbID)
-            year = IMDb['Year']
+            if not IMDb or "Error" in IMDb.keys():
+                return False
+            year = IMDb['Year'][0:4]
             titleIMDb = IMDb['Title']
             IMDbRating = IMDb['imdbRating'] if IMDb['imdbRating'] != "N/A" else "0"
             region = IMDb['Country'].replace(" ","").split(",")[0]
@@ -75,7 +78,8 @@ def IMDb2TMDb(IMDbID,lan="zh-TW"):
             if titleZH == titleEN and lan != "zh-CN":
                 return IMDb2TMDb(IMDbID,lan="zh-CN") #若TW譯名不存在，返回CN譯名
             genre_ids = results['genre_ids']
-            genres = "|".join([MVgenres[genre_id] for genre_id in genre_ids])
+
+            genres = "|".join([MVgenres[genre_id] if subtype == "movie" else TVgenres[genre_id] for genre_id in genre_ids]) 
             TMDbID = "TMDbMV_%s" % (results['id'])
             TMDbRating = results['vote_average']
 
@@ -121,4 +125,4 @@ def IMDbInt():
         TVgenres[genre['id']] = genre['name']
 
 IMDbInt()
-print()
+

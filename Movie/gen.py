@@ -62,7 +62,7 @@ def get_num_from_string(raw):
 
 def gen_douban(dblink):
     data = {}
-    sid = re.search(r"https:\/\/movie\.douban\.com\/(subject|movie)\/(\d+)",dblink).group(2)
+    sid = re.search(r"https:\/\/(movie\.)?douban\.com\/(subject|movie)\/(\d+)",dblink).group(3)
     data['sid'] = sid
     douban_page = get_page(dblink, bs_=True)
     douban_api_json = get_page(

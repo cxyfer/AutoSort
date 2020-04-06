@@ -1,0 +1,6 @@
+requests
+bs4
+lxml
+fake-useragent
+opencc-python-reimplemented
+html2bbcode

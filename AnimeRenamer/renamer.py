@@ -19,8 +19,7 @@ for i in List:
 	Dic[i[0]] = i[1]
 KeyList = [ i[0] for i in List ]
 
-name = mypath[mypath.find("]")+1:] #作品名稱
-
+name = mypath[mypath.rfind("]")+1:] #作品名稱
 for root, dirs, files in os.walk(mypath):
 	if mypath == root or mypath+"\\劇場版" in root : #略過特定資料夾
 		continue
@@ -34,6 +33,7 @@ for root, dirs, files in os.walk(mypath):
 	lang = block[1] if block[1] == block[-2] else "CHT" #語言(默認CHT)
 
 	for file in sorted(files) :
+		print(file)
 		if ".txt" in file or ".py" in file or ".part" in file or ".log" in file: #略過
 			continue
 		if ".ass" in file or ".srt" in file: #略過字幕
@@ -42,6 +42,7 @@ for root, dirs, files in os.walk(mypath):
 		#logNprint("File : "+file #原檔案名稱
 		file2 = file
 		replaceList = ["1080","720","2160","1280","1920","BS11","2019","2018","S01","S02","S03"] #去除會被誤判的數字
+		replaceList += [str(year) for year in range(2000,2020)]
 		for rep in replaceList:
 			file2=file2.replace(rep,"")
 

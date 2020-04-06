@@ -3,7 +3,7 @@
 ![執行示例](https://i.imgur.com/whiajFm.png)
 
 ## 需求套件
-pip install requests bs4 lxml fake-useragent opencc-python-reimplemented html2bbcode
+pip install -r requirements.txt
 
 ## 說明
 未完成待續
