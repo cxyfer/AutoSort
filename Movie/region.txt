@@ -25,6 +25,7 @@
 丹麦,丹,Denmark
 墨西哥,墨,Mexico
 土耳其,土,Turkey
+土耳其 Turkey,土,Turkey
 柬埔寨,柬,Cambodia
 匈牙利,匈,Hungary
 挪威,挪威,Norway

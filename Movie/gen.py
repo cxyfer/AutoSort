@@ -8,6 +8,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from html2bbcode.parser import HTML2BBCode
+import http.cookiejar
 
 __version__ = "0.4.5"
 __author__ = "Rhilip"
@@ -25,14 +26,15 @@ headers = {
     "Accept-Language": "en,zh-CN;q=0.9,zh;q=0.8"
 }
 
+cookies = http.cookiejar.MozillaCookieJar('.cookies\\douban.txt')
+cookies.load()
 
 def get_db_apikey() -> str:
     return random.choice(douban_apikey_list)
 
-
 def get_page(url: str, json_=False, jsonp_=False, bs_=False, text_=False, **kwargs):
     kwargs.setdefault("headers", headers)
-    page = requests.get(url, **kwargs)
+    page = requests.get(url, **kwargs,cookies=cookies)
 
     page.encoding = "utf-8"
     page_text = page.text
@@ -70,11 +72,14 @@ def gen_douban(dblink):
         params={'apikey': get_db_apikey()},
         json_=True
     )
+    douban_abstract_json = get_page('https://movie.douban.com/j/subject_abstract?subject_id={}'.format(sid), json_=True)
+
     data['success'] = False
-    if "msg" in douban_api_json:
+    if "msg" in douban_api_json and (douban_api_json["msg"] != 'invalid_credencial2'): #API失效應急
         data["error"] = douban_api_json["msg"]
     elif str(douban_page).find("检测到有异常请求") > -1:
         data["error"] = "GenHelp was banned by Douban."
+        data['exit'] = True
     elif douban_page.title.text == "页面不存在":
         data["error"] = "The corresponding resource does not exist."
     else:
@@ -144,11 +149,19 @@ def gen_douban(dblink):
                 pass
 
         # 豆瓣评分，简介，海报，导演，编剧，演员，标签
-        data["douban_rating_average"] = douban_average_rating = douban_api_json["rating"]["average"] or 0
+        '''data["douban_rating_average"] = douban_average_rating = douban_api_json["rating"]["average"] or 0
         data["douban_votes"] = douban_votes = douban_api_json["rating"]["numRaters"] or 0
         data["douban_rating"] = "{}/10 from {} users".format(douban_average_rating, douban_votes)
-        data["douban_rating"] = "{}/10 from {} users".format(douban_average_rating, douban_votes)
-        data["tags"] = list(map(lambda member: member["name"], douban_api_json["tags"]))
+        data["tags"] = list(map(lambda member: member["name"], douban_api_json["tags"]))'''
 
-        # 将清洗的数据一并发出
+        abstract_subject = douban_abstract_json["subject"]
+        try:
+            data["douban_rating_average"] = douban_average_rating = douban_page.find("strong", property="v:average").text or 0
+            data["douban_votes"] = douban_votes = douban_page.find("span", property="v:votes").text or 0
+        except:
+            data["douban_rating_average"] = douban_average_rating = abstract_subject["rate"] or 0
+        data["year"] = abstract_subject["release_year"] if not data["year"] else data["year"]
+        data["subtype"] = 'tv' if abstract_subject['is_tv'] or data["episodes"] or abstract_subject['subtype'].lower() == 'tv' else 'movie'
+
+    # 将清洗的数据一并发出
     return data

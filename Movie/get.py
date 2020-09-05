@@ -1,12 +1,15 @@
 # ！/usr/bin/python3
 # -*- coding: utf-8 -*-
 # Copyright (c) 2019-2020 GDST <gdst.tw@gmail.com>
-import os ,re ,requests
+import os ,re ,requests, time
 from opencc import OpenCC
 from fake_useragent import UserAgent
 import config
+from bs4 import BeautifulSoup
+import http.cookiejar
 
-ua = UserAgent()
+#UA = UserAgent()
+UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36'
 regDicEN = {}
 
 with open("region.txt" , "r", encoding = 'utf-8-sig') as regdataEN: #地區縮寫對應
@@ -14,8 +17,8 @@ with open("region.txt" , "r", encoding = 'utf-8-sig') as regdataEN: #地區縮�
 for regEN in regListEN:
     regDicEN[regEN[-1]]=regEN[:-1]
 
-def resjson(url):
-    r = requests.get(url,headers={'User-Agent':ua.random})
+def resjson(url,cookies=''):
+    r = requests.get(url,headers={'User-Agent':UA},cookies=cookies)
     res = r.json() # return dict
     return res
 
@@ -45,6 +48,19 @@ def imdb2db(IMDbID):
     res = resjson(imdb2db)
     dblink = res['alt'].replace("/movie/","/subject/")+"/" if 'alt' in res.keys() else ""
     return dblink
+
+def imdb2db2(IMDbID):
+    url = "https://movie.douban.com/j/subject_suggest?q={}".format(IMDbID)
+    cookies = http.cookiejar.MozillaCookieJar('.cookies\\douban.txt')
+    cookies.load()
+    res = resjson(url,cookies=cookies)
+    time.sleep(0.5)
+    try:
+        dblink = re.search(r"https:\/\/(movie\.)?douban\.com\/(subject|movie)\/(\d+)",res[0]['url']).group(0)
+        return dblink
+    except:
+        return False
+
 def IMDbInfo(IMDbID):
     rapidapi_imdb = "https://movie-database-imdb-alternative.p.rapidapi.com/?i=%s&r=json" % (IMDbID)
     payload = {"X-RapidAPI-Host": "movie-database-imdb-alternative.p.rapidapi.com",
@@ -83,6 +99,7 @@ def IMDb2TMDb(IMDbID,lan="zh-TW"):
             TMDbID = "TMDbMV_%s" % (results['id'])
             TMDbRating = results['vote_average']
 
+            reg1 = reg2 = reg3 = "None"
             for reg in regDicEN.keys(): #地區
                 if reg == region:
                     reg1 = regDicEN[reg][0]

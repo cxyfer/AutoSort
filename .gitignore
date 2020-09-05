@@ -7,7 +7,7 @@ Movie/MVAutoSort3.py
 Movie/api.py
 Movie/AutoSort.db
 Movie/Movie.tsv
-
+Movie/.cookies
 *.py[cod]
 *$py.class
 
