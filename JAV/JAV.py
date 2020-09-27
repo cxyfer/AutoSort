@@ -1,14 +1,15 @@
 #-*- coding: utf-8 -*-
 #v4.0 20190710 重新整理函數、加入預覽圖下載合併
-#v4.1 20190807 資料庫輸出、
+#v4.1 20190807 資料庫輸出、調整目錄結構
 #v4.2 未完成 相同檔案去重(檢查檔案大小)
 
 import os, requests, urllib, time, re
 from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
+#from fake_useragent import UserAgent
+from user_agent import generate_user_agent
 import config, search, sql
 
-ua = UserAgent()
+ua = generate_user_agent()
 db_name = "%s\\%s" % (config.LogPath,config.LogName) if config.LogPath else config.LogName #SQL
 
 class Log:
@@ -70,7 +71,7 @@ def GetCode(filename):
 #要處理的番號清單
 with open("keyword.txt" , "r", encoding = 'utf-8-sig') as keydata: 
 	KeyList = [l.strip() for l in keydata if l[0]!="@"]
-KeyList = list(set(KeyList)) #番號去重
+#KeyList = list(set(KeyList)) #番號去重
 if not os.path.isdir(config.tempfolder): #如果不是資料夾
 	os.mkdir(config.tempfolder)
 '''with open("keyword2.txt" , "r", encoding = 'utf-8-sig') as keydata: #找不到資料庫的特殊番號 (!待新增)
@@ -92,38 +93,83 @@ for lsdir in sorted(os.listdir(mypath)):
 		for i in files:
 			if "padding_file" in i: #跳過冗贅檔案
 				continue
-			if not re.match(r'.+\.(mkv|mp4|ts|wmv|avi)', i): #跳過非影像檔
+			if not re.search(r'.+?\.(mkv|mp4|ts|wmv|avi|flv|rmvb|iso|mov|m2ts|ass|srt)', i.lower()) \
+			and not re.match(r'.+?(_|-)?(s|screen|screenshot)\.(jpg|jpeg|png)', i.lower()):
+			#and not re.match(r'.+?\.(jpg|jpeg|png)', i.lower()) : #跳過非影像檔和非截圖
 				continue
 			'''for key2 in Key2Dic.keys(): #對於無資料庫的番號進行處理 (!待新增)
 				key2 = key2'''
 			for key in KeyList:
 				dirpath = mypath
 				code = GetCode(i) #從檔名找番號
+				if key=="FC2"  and "FC2" in i.upper() and re.search(r'\d{6,7}',i): #特殊番號
+					code = "FC2-" + re.search(r'\d{6,7}',i).group(0)
 				if not code : #如果不能夠從檔案名稱找出番號
 					continue
-				if len(code[code.find("-")+1:]) >= 5: #例外處理：部分番號會用5位數字，但搜尋時必須為3位
+				if len(code[code.find("-")+1:]) >= 4: #例外處理：部分番號會用4.5位數字，但搜尋時必須為3位
 					code = code.replace("-00","-") 
+					code = code.replace("-0","-") 
+				#if key[0].isdigit() or key =="SIRO" or key =="KIRAY":
+					#continue
 				print("Code :",code)
-				if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
-					os.mkdir(mypath+"\\@~Sorted\\"+key)
-				result = search.Database2(key,code,mypath) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else search.Database1(key,code,mypath)
-				if not result['success']: #如果不存在對應的資料
-					print("*Error :",result['error'])
-					result = search.Database1(key,code,mypath) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else search.Database2(key,code,mypath) #調換
-					if not result['success']:
+
+				query = sql.query(db_name,'JAV',code) #查詢舊有資料
+				if query == None: #若不存在舊有資料→到網路查詢
+					if not os.path.isdir(mypath+"\\@~Sorted\\"+key):
+						os.mkdir(mypath+"\\@~Sorted\\"+key)
+					#result = search.Database1(key,code,mypath)
+					if key == "T28": #特殊番號例外處理
+						result = search.Database3(key,code.replace("T28-","T-28"),mypath)
+						if result['success']:
+							result['code'] = result['code'].replace("T-28","T28-")
+							result['save'][0] = result['save'][0].replace("T-28","T28-")
+					elif key[0].isdigit() or key =="SIRO" or key =="KIRAY":
+						result = search.Database2(key,code,mypath)
+					elif key=="FC2" and "FC2" in i.upper():
+						result = search.Database3(key,code,mypath)
+						time.sleep(2)
+					else:
+						result = search.Database1(key,code,mypath)
+					if not result['success']: #如果不存在對應的資料
 						print("*Error :",result['error'])
-						continue
-				save = result['save']
-				
+						result = search.Database1(key,code,mypath) if key[0].isdigit() or key =="SIRO" or key =="KIRAY" else search.Database2(key,code,mypath) #調換
+						if not result['success']:
+							if key not in ["FC2","T28"]:
+								result = search.Database3(key,code,mypath)
+								if not result['success']:
+									print("*Error :",result['error'])
+									continue
+							else:
+								print("*Error :",result['error'])
+								continue
+
+					save = result['save']
+					sql.input(db_name,'JAV', save)
+					dirpath = result['dirpath']
+				else:
+					if key=="FC2":
+						dirpath = mypath+"\\@~Sorted\\@"+key+"\\"+query[7]+"\\"+code
+					else:
+						number = int(code[code.find("-")+1:])
+						order = "%03d~%03d" % (number-100+1,number) if number%100 == 0 else "%03d~%03d" % ((number//100)*100+1,(number//100+1)*100)
+						dirpath = mypath+"\\@~Sorted\\"+key+"\\"+order+"\\"+code
+
 				print("File : "+i)
 				i2=i #檔案移動處理
-				dirpath = result['dirpath']
+				i2=i2.replace("_hhd000.com_免翻_墙免费访问全球最大情_色网站P_ornhub_可看收费内容","")
+				i2=i2.replace("@hhd000.com_免翻#墙免费访问全球最大情#色网站P#ornhub,可看收费内容","")
+
 				if not os.path.isfile(dirpath+"\\"+i2): #若檔案不存在
+					if not os.path.isdir(dirpath):
+						os.makedirs(dirpath)
 					try:
 						os.rename(root+"\\"+i,dirpath+"\\"+i2)
 						print("Move : "+dirpath)
-					except FileNotFoundError:
-						print("*Error : FileNotFound "+file1)
+					except FileNotFoundError as e:
+						print("*Error : FileNotFound "+i)
+						continue
+					except PermissionError as e:
+						print("*Error : PermissionError "+i)
 						continue
 				else: #若檔案存在
 					file1 = root+"\\"+i
@@ -135,6 +181,10 @@ for lsdir in sorted(os.listdir(mypath)):
 						for j in range(1,10):
 							dotpos = i2.rfind(".")
 							i3 = i2[:dotpos]+"~"+str(j)+i2[dotpos:]
+							if config.CheckFile and file_size(file1) == file_size(dirpath+"\\"+i3) : #若需要比對檔案，且存在的檔案相同
+								os.remove(file1)
+								break
+								print("*Error : Exist same file \n  *Remove : "+file1)
 							if not os.path.isfile(dirpath+"\\"+i3):
 								try:
 									os.rename(root+"\\"+i,dirpath+"\\"+i3)
@@ -144,5 +194,6 @@ for lsdir in sorted(os.listdir(mypath)):
 								print("*Exist : "+i+"\n *Rename : "+i3)
 								print("Move : "+dirpath)
 								break
-				sql.input(db_name,'JAV', save)
+				#sql.input(db_name,'JAV', save)
+				break
 input("\n整理完成，請按Enter離開")

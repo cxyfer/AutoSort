@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2019-2020 GDST <gdst.tw@gmail.com>
 
-import json , requests ,random ,os,re,time
+import json, requests, random, os, re, time
 from opencc import OpenCC
 from bs4 import BeautifulSoup
 #from fake_useragent import UserAgent
 from user_agent import generate_user_agent
 import gen as Gen
 import get as Get
-import sql,search,config
+import sql, search,config
 
 #Initialize
 #ua = UserAgent().random
@@ -223,68 +223,43 @@ for folder in folderList:
 				SubD = False
 				IMDbID = re.search(r"\((tt\d+)\)",d).group(1)
 				LogNPrint("IMDbID : "+IMDbID)
-				dblink = Get.imdb2db2(IMDbID)
+				dblink = search.imdb2db2(IMDbID)
 			elif Get.findnfo(folderpath): #如果能從資料夾內的.nfo找到IMDb或douban鏈接
 				get_nfo = Get.findnfo(folderpath)
 				if 'imdb' in get_nfo.keys():
 					IMDbID = get_nfo['imdb']
 					LogNPrint("IMDbID : "+IMDbID)
-					dblink = Get.imdb2db2(get_nfo['imdb'])
+					dblink = search.imdb2db2(get_nfo['imdb'])
 				elif 'douban' in get_nfo.keys():
 					dblink = get_nfo['douban']
 			else:
-				ptsearch = search.ourbits(d)
-				if not (IMDbID or dblink) and re.search(r"(Ao|FLTTH|iLoveHD|iLoveTV|MGs|OurPad|OurTV|PbK|NTb|NTG|VCB-Studio)",d) and ptsearch: #如果能從Ourbits找到IMDbID或dblink
-					LogNPrint("Search : from Ourbits")
+				ptsearch = search.PT(d)
+				if not (IMDbID or dblink) and ptsearch:
 					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
+					dblink = ptsearch['douban'] if ptsearch['douban'] else ""
+					LogNPrint("Search : from {}".format(ptsearch['source']))
 				if not (IMDbID or dblink) and re.search(r"WiKi|DoA|JuJuYuJu|NGB|ARiN|ExREN|NTb|NTG|CHD",d) and search.TTG(d): #如果能從TTG找到IMDbID或dblink
 					ptsearch = search.TTG(d)
 					if ptsearch['imdb'] or ptsearch['douban']:
 						LogNPrint("Search : from TTG")
 						IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-						dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)				
+						dblink = ptsearch['douban'] if ptsearch['douban'] else search.imdb2db2(IMDbID)				
 					if ptsearch['title'] and not dblink:
 						LogNPrint("UseThis: "+ptsearch['title'])
 						dblink = Search.DB(ptsearch['title'],year_check=config.year_check)
 						if not dblink:
 							dblink = Search.DB(ptsearch['title'],year_check=False)
-				ptsearch = search.SSD(d)
-				if not (IMDbID or dblink) and re.search(r"CMCT|NTb",d) and ptsearch: #如果能從SSD找到IMDbID或dblink
-					LogNPrint("Search : from SSD")
-					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
-				if not (IMDbID or dblink) and re.search(r"TJUPT|AOA|QAQ|PBO|NigulaSi|DGF|VCB-Studio",d) and search.TJUPT(d): #如果能從TJUPT找到IMDbID或dblink
-					ptsearch = search.TJUPT(d)
-					LogNPrint("Search : from TJUPT")
-					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
-				if not (IMDbID or dblink) and re.search(r"FRDS|Yumi",d) and search.FRDS(d): #如果能從FRDS找到IMDbID或dblink
-					ptsearch = search.FRDS(d)
-					LogNPrint("Search : from FRDS")
-					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
 				if not (IMDbID or dblink) and re.search(r"PuTao",d) and search.PuTao(d): #如果能從PuTao找到IMDbID或dblink
 					ptsearch = search.PuTao(d)
 					LogNPrint("Search : from PuTao")
 					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
-				if not (IMDbID or dblink) and re.search(r"PTer|recked89|NTb|NTG|ExREN|AREY|FRDS|beAst|CHD|RBOF",d) and search.PTer(d): #如果能從PuTao找到IMDbID或dblink
-					ptsearch = search.PTer(d)
-					LogNPrint("Search : from PTer")
-					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
-				if not (IMDbID or dblink) and re.search(r"BMDru",d) and search.TCCF(d): #如果能從PuTao找到IMDbID或dblink
-					ptsearch = search.TCCF(d)
-					LogNPrint("Search : from TCCF")
-					IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-					dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)
+					dblink = ptsearch['douban'] if ptsearch['douban'] else search.imdb2db2(IMDbID)
 				if not (IMDbID or dblink) and re.search(r"MTeam|MPAD|OneHD|StBOX|beAst|CHD",d) and search.MTeam(d): #如果能從MTeam找到IMDbID或dblink
 					ptsearch = search.MTeam(d)
 					if 'imdb' in ptsearch.keys() or 'douban' in ptsearch.keys():
 						LogNPrint("Search : from MTeam")
 						IMDbID = ptsearch['imdb'] if ptsearch['imdb'] else ""
-						dblink = ptsearch['douban'] if ptsearch['douban'] else Get.imdb2db2(IMDbID)				
+						dblink = ptsearch['douban'] if ptsearch['douban'] else search.imdb2db2(IMDbID)				
 					elif 'title' in ptsearch.keys():
 						dblink = Search.DB(ptsearch['title'],year_check=config.year_check)
 						if not dblink:
@@ -295,6 +270,8 @@ for folder in folderList:
 					dblink = Search.DB(d,mod=2,year_check=config.year_check)'''
 			if dblink: #如果能返回豆瓣鏈接
 				LogNPrint("dbLink : "+dblink)
+				'''LogNPrint("*Debug : Pass.")
+				continue'''
 				try:
 					name = Search.GetInfo(dblink)
 				except:
@@ -309,6 +286,7 @@ for folder in folderList:
 					else:
 						subtype,year,reg1,name,save = "","","","",""
 			elif not dblink and IMDbID: #如果無法返回dbLink，但有IMDbID→改用TMDB跟IMDb搜尋資訊
+				LogNPrint("IMDbID : "+IMDbID)
 				GetTMDb = Get.IMDb2TMDb(IMDbID)
 
 				if GetTMDb:
@@ -368,8 +346,9 @@ for folder in folderList:
 			path2 = mypath+"\\"+Path+"\\"+d if SubD else mypath+"\\"+Path
 			if len(path2) > config.pathlen and not subtype == "tv" : #路徑長度(但對TV類型不啟用)
 				path2 = mypath+"\\"+Path
-			command = ("rclone move -v \"%s\" \"%s\" --log-file=%s" %(path1,path2,Logfile))
+			command = ("rclone move -v \"%s\" \"%s\" --stats 30s --log-file=%s" %(path1,path2,Logfile))
 			os.system(command)
+			#os.popen(command)
 			LogNPrint("MoveTo : "+path2)
 		command = ("rclone rmdirs -v \"%s\"" % (mypath+"\\"+folder))
 		os.system(command)

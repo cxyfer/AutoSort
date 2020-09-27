@@ -51,7 +51,7 @@ def imdb2db(IMDbID):
 
 def imdb2db2(IMDbID):
     url = "https://movie.douban.com/j/subject_suggest?q={}".format(IMDbID)
-    cookies = http.cookiejar.MozillaCookieJar('.cookies\\douban.txt')
+    cookies = http.cookiejar.MozillaCookieJar('sites\\.cookies\\douban.txt')
     cookies.load()
     res = resjson(url,cookies=cookies)
     time.sleep(0.5)

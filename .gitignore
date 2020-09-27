@@ -8,6 +8,7 @@ Movie/api.py
 Movie/AutoSort.db
 Movie/Movie.tsv
 Movie/.cookies
+Movie/sites/.cookies
 *.py[cod]
 *$py.class
 

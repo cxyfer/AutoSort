@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import sqlite3 ,re ,config
+import sqlite3, config
 
 def init(db_name,table_name):
 	conn = sqlite3.connect(db_name)

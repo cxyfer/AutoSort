@@ -26,7 +26,7 @@ headers = {
     "Accept-Language": "en,zh-CN;q=0.9,zh;q=0.8"
 }
 
-cookies = http.cookiejar.MozillaCookieJar('.cookies\\douban.txt')
+cookies = http.cookiejar.MozillaCookieJar('sites\\.cookies\\douban.txt')
 cookies.load()
 
 def get_db_apikey() -> str:
@@ -73,14 +73,15 @@ def gen_douban(dblink):
         json_=True
     )
     douban_abstract_json = get_page('https://movie.douban.com/j/subject_abstract?subject_id={}'.format(sid), json_=True)
-
     data['success'] = False
+
     if "msg" in douban_api_json and (douban_api_json["msg"] != 'invalid_credencial2'): #API失效應急
         data["error"] = douban_api_json["msg"]
     elif str(douban_page).find("检测到有异常请求") > -1:
         data["error"] = "GenHelp was banned by Douban."
         data['exit'] = True
     elif douban_page.title.text == "页面不存在":
+        print(douban_page)
         data["error"] = "The corresponding resource does not exist."
     else:
         data["douban_link"] = dblink
@@ -165,3 +166,6 @@ def gen_douban(dblink):
 
     # 将清洗的数据一并发出
     return data
+if __name__ == '__main__':
+    x = "https://movie.douban.com/subject/27200642"
+    gen_douban(x)
