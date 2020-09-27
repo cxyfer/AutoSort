@@ -14,7 +14,6 @@ def search(keyword, headers, cookies='.cookies\\tjupt.txt'):
 	key2 = key2.replace("@"," ")
 	key2 = key2.replace(".Complete."," ")
 	url="https://www.tjupt.org/torrents.php?search="+key2
-	print(url)
 
 	cookies = http.cookiejar.MozillaCookieJar(cookies)
 	cookies.load()
@@ -31,7 +30,8 @@ def search(keyword, headers, cookies='.cookies\\tjupt.txt'):
 		print(res.status_code) if res.status_code != 200 else print("",end="")
 
 		soup = BeautifulSoup(res.text, 'lxml')
-		decrypted = decode(soup.find("span",{"class":"__cf_email__"}).get("data-cfemail")) #cf_email
+		cf_email = soup.find("span",{"class":"__cf_email__"})
+		decrypted = decode(cf_email.get("data-cfemail")) if cf_email else ""
 		title = soup.find("a",{"class":"index"}).getText().replace("[email protected]",decrypted).replace("[TJUPT].","").replace(".torrent","")
 
 		if title == keyword or title == key1:

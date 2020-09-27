@@ -38,7 +38,8 @@ def search(keyword, headers, cookies='.cookies\\pter.txt'):
 		print(response.status_code) if response.status_code != 200 else print("",end="")
 
 		soup = BeautifulSoup(res.text, 'lxml')
-		decrypted = decode(soup.find("span",{"class":"__cf_email__"}).get("data-cfemail")) #cf_email
+		cf_email = soup.find("span",{"class":"__cf_email__"})
+		decrypted = decode(cf_email.get("data-cfemail")) if cf_email else ""
 		title = soup.find("a",{"class":"index"}).getText().replace(".torrent","").replace("[PTer].","").replace("[email protected]",decrypted)
 
 		if title == keyword or title == key1:
